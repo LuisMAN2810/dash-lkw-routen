@@ -14,7 +14,7 @@ GRAPHHOPPER_API_KEY = "045abf50-4e22-453a-b0a9-8374930f4e47"
 import os
 
 # Sicherstellen, dass die Datei aus dem aktuellen Verzeichnis geladen wird
-file_path = os.path.join(BASE_DIR, "Datenblatt Routenanalyse.csv")
+file_path = os.path.join(BASE_DIR, "Datenblatt Routenanalyse .csv")
 df = pd.read_csv(file_path, delimiter=",")  # Falls Tabulator, dann delimiter="\t"
 
 
