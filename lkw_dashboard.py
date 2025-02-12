@@ -13,6 +13,13 @@ GRAPHHOPPER_API_KEY = "045abf50-4e22-453a-b0a9-8374930f4e47"
 # Einlesen der Excel-Datei mit den Routen
 import os
 
+# Basisverzeichnis des aktuellen Skripts bestimmen
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Pfad zur CSV-Datei
+file_path = os.path.join(BASE_DIR, "Datenblatt Routenanalyse .csv")
+
+
 # Sicherstellen, dass die Datei aus dem aktuellen Verzeichnis geladen wird
 file_path = os.path.join(BASE_DIR, "Datenblatt Routenanalyse .csv")
 df = pd.read_csv(file_path, delimiter=",")  # Falls Tabulator, dann delimiter="\t"
