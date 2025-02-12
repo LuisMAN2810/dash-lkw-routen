@@ -1,0 +1,12 @@
+html, body, #app-container {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+#map {
+    width: 100vw;  /* Volle Bildschirmbreite */
+    height: 80vh;  /* 80% der Bildschirmhöhe */
+}
