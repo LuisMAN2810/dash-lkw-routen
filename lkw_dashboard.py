@@ -11,7 +11,13 @@ import polyline
 GRAPHHOPPER_API_KEY = "045abf50-4e22-453a-b0a9-8374930f4e47"
 
 # Einlesen der Excel-Datei mit den Routen
-file_path = "C:\\BEV_Routen\\Datenblatt Routenanalyse .xlsx"
+import os
+
+# Sicherstellen, dass die Datei aus dem aktuellen Verzeichnis geladen wird
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+file_path = os.path.join(BASE_DIR, "Datenblatt Routenanalyse.xlsx")
+
+df = pd.read_excel(file_path)
 df = pd.read_excel(file_path)
 
 # Funktion zur Bereinigung der Koordinaten
