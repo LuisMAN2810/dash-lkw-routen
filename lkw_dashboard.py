@@ -49,16 +49,25 @@ route_options = [{'label': 'Alle anzeigen', 'value': 'all'}] + [
 ]
 
 # Layout der App
-app.layout = html.Div([
-    html.H1("LKW Routen-Dashboard"),
-    dcc.Dropdown(
-        id='route-selector',
-        options=route_options,
-        multi=True,
-        placeholder="Wähle eine Route"
-    ),
-    html.Iframe(id="map", width="100%", height="600")
-])
+app.layout = html.Div(
+    id="app-container",
+    style={'width': '100vw', 'height': '100vh', 'display': 'flex', 'flexDirection': 'column'},
+    children=[
+        html.H1("LKW Routen-Dashboard", style={'textAlign': 'center'}),
+        dcc.Dropdown(
+            id='route-selector',
+            options=route_options,
+            multi=True,
+            placeholder="Wähle eine Route",
+            style={'width': '50%', 'margin': 'auto'}
+        ),
+        html.Iframe(
+            id="map",
+            style={'width': '100vw', 'height': '80vh', 'border': 'none'}
+        )
+    ]
+)
+
 
 # Funktion zur Berechnung der LKW-Route mit GraphHopper
 def get_lkw_route(start_coords, end_coords):
