@@ -14,11 +14,9 @@ GRAPHHOPPER_API_KEY = "045abf50-4e22-453a-b0a9-8374930f4e47"
 import os
 
 # Sicherstellen, dass die Datei aus dem aktuellen Verzeichnis geladen wird
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-file_path = os.path.join(BASE_DIR, "Datenblatt Routenanalyse.xlsx")
+file_path = os.path.join(BASE_DIR, "Datenblatt Routenanalyse.csv")
+df = pd.read_csv(file_path, delimiter=",")  # Falls Tabulator, dann delimiter="\t"
 
-df = pd.read_excel(file_path)
-df = pd.read_excel(file_path)
 
 # Funktion zur Bereinigung der Koordinaten
 def clean_coordinates(coord_string):
