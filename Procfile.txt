@@ -1,0 +1,5 @@
+web: gunicorn lkw_dashboard.py:server
+
+from dein_dash_script import app
+server = app.server
+
