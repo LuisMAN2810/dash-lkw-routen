@@ -22,7 +22,7 @@ file_path = os.path.join(BASE_DIR, "Datenblatt Routenanalyse .csv")
 
 # Sicherstellen, dass die Datei aus dem aktuellen Verzeichnis geladen wird
 file_path = os.path.join(BASE_DIR, "Datenblatt Routenanalyse .csv")
-df = pd.read_csv(file_path, delimiter=",")  # Falls Tabulator, dann delimiter="\t"
+df = pd.read_csv(file_path, delimiter=";", encoding="utf-8", error_bad_lines=False, warn_bad_lines=True)
 
 
 # Funktion zur Bereinigung der Koordinaten
