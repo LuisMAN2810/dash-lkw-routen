@@ -18,16 +18,21 @@ df = pd.read_csv(file_path, delimiter=";", encoding="utf-8")
 def clean_coordinates(coord_string):
     """ Entfernt unerwünschte Zeichen und konvertiert in Float-Koordinaten. """
     try:
-        coord_string = coord_string.replace("\t", "").replace(",", ".")
-        lat, lon = map(float, coord_string.split(";"))
-        return [lon, lat]  # GraphHopper erwartet [LON, LAT]
+        if isinstance(coord_string, str):  # Prüfe, ob der Wert überhaupt ein String ist
+            coord_string = coord_string.replace("\t", "").replace(",", ".").strip()
+            lat, lon = map(float, coord_string.split(";"))
+            return [lon, lat]  # GraphHopper erwartet [LON, LAT]
     except Exception as e:
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
-        return None
+    return None
 
 # Bereinige die Koordinaten
 df["Koordinaten Start"] = df["Koordinaten Start"].apply(clean_coordinates)
 df["Koordinaten Ziel"] = df["Koordinaten Ziel"].apply(clean_coordinates)
+
+# Debugging: Überprüfe die Koordinaten
+df.dropna(subset=["Koordinaten Start", "Koordinaten Ziel"], inplace=True)
+print(df[["Koordinaten Start", "Koordinaten Ziel"]].head())
 
 # Dash-App initialisieren
 app = dash.Dash(__name__)
@@ -64,8 +69,10 @@ def get_lkw_route(start_coords, end_coords):
 
     try:
         response = requests.post(url, json=payload)
+        print(f"🔹 API-Request: Start={start_coords}, Ziel={end_coords}")
         if response.status_code == 200:
             data = response.json()
+            print(f"📡 API Antwort: {data}")
             return data["paths"][0]["points"]
         else:
             print(f"⚠️ Fehler bei der Routenberechnung: {response.json()}")
@@ -115,20 +122,21 @@ def update_map(selected_routes):
                 start_coords = row["Koordinaten Start"]
                 end_coords = row["Koordinaten Ziel"]
                 transporte = row["Transporte pro Woche"]
-
+                
                 if start_coords and end_coords:
                     # LKW-optimierte Route abrufen
                     route_geometry = get_lkw_route(start_coords, end_coords)
                     route_color = get_route_color(transporte)
-
+                    
                     if route_geometry:
-                        folium.PolyLine(
-                            locations=[[p[1], p[0]] for p in json.loads(route_geometry)['coordinates']],
-                            color=route_color,
-                            weight=5,
-                            opacity=0.8
-                        ).add_to(m)
-
+                        route_coords = json.loads(route_geometry)['coordinates']
+                        if route_coords:
+                            folium.PolyLine(
+                                locations=[[p[1], p[0]] for p in route_coords],
+                                color=route_color,
+                                weight=5,
+                                opacity=0.8
+                            ).add_to(m)
             except Exception as e:
                 print(f"⚠️ Fehler bei Route {row['Route']}: {e}")
 
@@ -141,5 +149,4 @@ def update_map(selected_routes):
 if __name__ == '__main__':
     app.run_server(debug=True)
 server = app.server
-
 
