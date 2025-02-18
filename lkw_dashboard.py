@@ -145,4 +145,6 @@ def update_map(selected_routes):
 # Server starten
 if __name__ == '__main__':
     app.run_server(debug=True)
+server = app.server
+
 
