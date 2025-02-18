@@ -11,7 +11,7 @@ import os
 GRAPHHOPPER_API_KEY = "045abf50-4e22-453a-b0a9-8374930f4e47"
 
 # Einlesen der CSV-Datei mit den Routen
-file_path = "Datenblatt Routenanalyse .csv"
+file_path = "Datenblatt Routenanalyse.csv"
 df = pd.read_csv(file_path, delimiter=";", encoding="utf-8")
 
 # Funktion zur Bereinigung der Koordinaten
@@ -97,14 +97,14 @@ def update_map(selected_routes):
     # Erstelle eine Karte mit Fokus auf Deutschland
     m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
 
-    # Legende hinzufügen
+    # Legende mit Linien hinzufügen
     legend_html = '''
-    <div style="position: fixed; bottom: 50px; left: 50px; width: 160px; background-color: white; z-index:9999; padding: 10px; border-radius: 5px; border:1px solid black; font-size:14px">
+    <div style="position: fixed; bottom: 50px; left: 50px; width: 180px; background-color: white; z-index:9999; padding: 10px; border-radius: 5px; border:1px solid black; font-size:14px">
         <b>Legende: Transporte pro Woche</b><br>
-        <span style="color: green;">&#9679;</span> 0 - 10<br>
-        <span style="color: yellow;">&#9679;</span> 10 - 50<br>
-        <span style="color: orange;">&#9679;</span> 50 - 100<br>
-        <span style="color: red;">&#9679;</span> 100+<br>
+        <svg width="20" height="10"><line x1="0" y1="5" x2="20" y2="5" style="stroke:green;stroke-width:4"/></svg> 0 - 10<br>
+        <svg width="20" height="10"><line x1="0" y1="5" x2="20" y2="5" style="stroke:yellow;stroke-width:4"/></svg> 10 - 50<br>
+        <svg width="20" height="10"><line x1="0" y1="5" x2="20" y2="5" style="stroke:orange;stroke-width:4"/></svg> 50 - 100<br>
+        <svg width="20" height="10"><line x1="0" y1="5" x2="20" y2="5" style="stroke:red;stroke-width:4"/></svg> 100+<br>
     </div>
     '''
     m.get_root().html.add_child(folium.Element(legend_html))
@@ -128,11 +128,6 @@ def update_map(selected_routes):
                             weight=5,
                             opacity=0.8
                         ).add_to(m)
-
-                    # Marker mit Infos
-                    popup_text = f"Route: {row['Route']}<br>Transporte/Woche: {row['Transporte pro Woche']}<br><a href='{row['Routen Google Maps']}' target='_blank'>Google Maps Link</a>"
-                    folium.Marker(start_coords[::-1], popup=popup_text, icon=folium.Icon(color="green")).add_to(m)
-                    folium.Marker(end_coords[::-1], popup=popup_text, icon=folium.Icon(color="red")).add_to(m)
 
             except Exception as e:
                 print(f"⚠️ Fehler bei Route {row['Route']}: {e}")
