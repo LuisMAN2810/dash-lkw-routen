@@ -5,32 +5,20 @@ import folium
 from dash.dependencies import Input, Output
 import requests
 import json
-import polyline
+import os
 
 # GraphHopper API-Key (ersetze mit deinem eigenen API-Schlüssel)
 GRAPHHOPPER_API_KEY = "045abf50-4e22-453a-b0a9-8374930f4e47"
 
-# Einlesen der Excel-Datei mit den Routen
-import os
-
-# Basisverzeichnis des aktuellen Skripts bestimmen
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# Pfad zur CSV-Datei
-file_path = os.path.join(BASE_DIR, "Datenblatt Routenanalyse .csv")
-
-
-# Sicherstellen, dass die Datei aus dem aktuellen Verzeichnis geladen wird
-file_path = os.path.join(BASE_DIR, "Datenblatt Routenanalyse .csv")
-df = pd.read_csv(file_path, delimiter=";", encoding="utf-8", on_bad_lines="skip")
-
+# CSV-Datei einlesen
+file_path = "Datenblatt Routenanalyse .csv"
+df = pd.read_csv(file_path, delimiter=";", encoding="utf-8")
 
 # Funktion zur Bereinigung der Koordinaten
 def clean_coordinates(coord_string):
     """ Entfernt unerwünschte Zeichen und konvertiert in Float-Koordinaten. """
     try:
-        coord_string = coord_string.replace("\t", "").replace(",", ".")
-        lat, lon = map(float, coord_string.split(";"))
+        lat, lon = map(float, coord_string.replace("\t", "").replace(",", ".").split(";"))
         return [lon, lat]  # GraphHopper erwartet [LON, LAT]
     except Exception as e:
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
@@ -45,46 +33,29 @@ app = dash.Dash(__name__)
 
 # Dropdown-Optionen aus der Excel-Datei laden
 route_options = [{'label': 'Alle anzeigen', 'value': 'all'}] + [
-    {'label': row['Route'], 'value': row['Route']} for index, row in df.iterrows()
+    {'label': row['Route'], 'value': row['Route']} for _, row in df.iterrows()
 ]
-
-# Layout der App
-app.layout = html.Div(
-    id="app-container",
-    style={'width': '100vw', 'height': '100vh', 'display': 'flex', 'flexDirection': 'column'},
-    children=[
-        html.H1("LKW Routen-Dashboard", style={'textAlign': 'center'}),
-        dcc.Dropdown(
-            id='route-selector',
-            options=route_options,
-            multi=True,
-            placeholder="Wähle eine Route",
-            style={'width': '50%', 'margin': 'auto'}
-        ),
-        html.Iframe(
-            id="map",
-            style={'width': '100vw', 'height': '80vh', 'border': 'none'}
-        )
-    ]
-)
-
 
 # Funktion zur Berechnung der LKW-Route mit GraphHopper
 def get_lkw_route(start_coords, end_coords):
-    url = f"https://graphhopper.com/api/1/route?point={start_coords[1]},{start_coords[0]}&point={end_coords[1]},{end_coords[0]}&profile=truck&key={GRAPHHOPPER_API_KEY}&points_encoded=true"
+    url = f"https://graphhopper.com/api/1/route?key={GRAPHHOPPER_API_KEY}"
     
+    payload = {
+        "points": [start_coords, end_coords],
+        "profile": "truck",
+        "locale": "de",
+        "calc_points": True,
+        "instructions": False,  # Keine detaillierten Fahranweisungen nötig
+        "geometry": True
+    }
+
     try:
-        response = requests.get(url)
+        response = requests.post(url, json=payload)
         if response.status_code == 200:
             data = response.json()
-            if "paths" in data and data["paths"]:
-                encoded_polyline = data["paths"][0]["points"]
-                return polyline.decode(encoded_polyline)
-            else:
-                print("⚠️ Keine gültigen Routenpunkte in der API-Antwort.")
-                return None
+            return data["paths"][0]["points"]
         else:
-            print(f"⚠️ Fehler bei der Routenberechnung: {response.status_code} - {response.text}")
+            print(f"⚠️ Fehler bei der Routenberechnung: {response.json()}")
             return None
     except Exception as e:
         print(f"⚠️ API-Fehler: {e}")
@@ -102,20 +73,45 @@ def update_map(selected_routes):
     # Erstelle eine Karte mit Fokus auf Deutschland
     m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
 
-    for index, row in df.iterrows():
+    # Legenden-HTML erstellen
+    legend_html = """
+    <div style="position: fixed; 
+                bottom: 50px; left: 10px; width: 200px; height: 140px; 
+                background-color: white; z-index:9999; font-size:14px;
+                padding: 10px; border-radius: 5px; box-shadow: 2px 2px 2px grey;">
+        <b>Legende: Transporte/Woche</b><br>
+        <div style="width:20px; height:10px; background:green; display:inline-block;"></div> 0 - 10<br>
+        <div style="width:20px; height:10px; background:yellow; display:inline-block;"></div> 10 - 50<br>
+        <div style="width:20px; height:10px; background:orange; display:inline-block;"></div> 50 - 100<br>
+        <div style="width:20px; height:10px; background:red; display:inline-block;"></div> 100+<br>
+    </div>
+    """
+
+    for _, row in df.iterrows():
         if row['Route'] in selected_routes:
             try:
                 start_coords = row["Koordinaten Start"]
                 end_coords = row["Koordinaten Ziel"]
+                transports = row["Transporte pro Woche"]
 
                 if start_coords and end_coords:
                     # LKW-optimierte Route abrufen
                     route_geometry = get_lkw_route(start_coords, end_coords)
 
+                    # Farben abhängig von Transporten pro Woche
+                    if transports <= 10:
+                        color = "green"
+                    elif transports <= 50:
+                        color = "yellow"
+                    elif transports <= 100:
+                        color = "orange"
+                    else:
+                        color = "red"
+
                     if route_geometry:
                         folium.PolyLine(
-                            locations=route_geometry,
-                            color="blue",
+                            locations=[[p[1], p[0]] for p in json.loads(route_geometry)['coordinates']],
+                            color=color,
                             weight=5,
                             opacity=0.8
                         ).add_to(m)
@@ -128,14 +124,26 @@ def update_map(selected_routes):
             except Exception as e:
                 print(f"⚠️ Fehler bei Route {row['Route']}: {e}")
 
+    # Legende der Karte hinzufügen
+    m.get_root().html.add_child(folium.Element(legend_html))
+
     # Karte speichern und anzeigen
     map_path = "map.html"
     m.save(map_path)
     return open(map_path, "r", encoding="utf-8").read()
 
+# Layout der App
+app.layout = html.Div([
+    html.H1("LKW Routen-Dashboard"),
+    dcc.Dropdown(
+        id='route-selector',
+        options=route_options,
+        multi=True,
+        placeholder="Wähle eine Route"
+    ),
+    html.Iframe(id="map", width="100%", height="600")
+])
+
 # Server starten
 if __name__ == '__main__':
     app.run_server(debug=True)
-server = app.server  # WICHTIG für Render Deployment!
-
-
