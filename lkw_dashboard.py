@@ -14,6 +14,12 @@ GRAPHHOPPER_API_KEY = "045abf50-4e22-453a-b0a9-8374930f4e47"
 file_path = "Datenblatt Routenanalyse .csv"
 df = pd.read_csv(file_path, delimiter=";", encoding="utf-8")
 
+# Umwandlung der Spalte "Transporte pro Woche" in Integer
+df["Transporte pro Woche"] = pd.to_numeric(df["Transporte pro Woche"], errors='coerce')
+
+# Entferne Zeilen mit NaN-Werten in den wichtigen Spalten
+df = df.dropna(subset=["Transporte pro Woche", "Koordinaten Start", "Koordinaten Ziel"])
+
 # Funktion zur Bereinigung der Koordinaten
 def clean_coordinates(coord_string):
     """ Entfernt unerwünschte Zeichen und konvertiert in Float-Koordinaten. """
