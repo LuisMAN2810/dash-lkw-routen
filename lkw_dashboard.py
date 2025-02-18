@@ -11,7 +11,7 @@ import os
 GRAPHHOPPER_API_KEY = "045abf50-4e22-453a-b0a9-8374930f4e47"
 
 # Einlesen der CSV-Datei mit den Routen
-file_path = "Datenblatt Routenanalyse.csv"
+file_path = "Datenblatt Routenanalyse .csv"
 df = pd.read_csv(file_path, delimiter=";", encoding="utf-8")
 
 # Funktion zur Bereinigung der Koordinaten
