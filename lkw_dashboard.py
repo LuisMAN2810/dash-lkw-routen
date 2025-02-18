@@ -60,28 +60,29 @@ app.layout = html.Div([
     html.Iframe(id="map", width="100%", height="600")
 ])
 
-# Funktion zur Berechnung der LKW-Route mit GraphHopper
 def get_lkw_route(start_coords, end_coords):
-    url = f"https://graphhopper.com/api/1/route?key={GRAPHHOPPER_API_KEY}"
+    url = "https://graphhopper.com/api/1/route"
     
-    payload = {
-        "points": [start_coords, end_coords],
+    params = {
+        "key": GRAPHHOPPER_API_KEY,
+        "point": [f"{start_coords[1]},{start_coords[0]}", f"{end_coords[1]},{end_coords[0]}"],  # Reihenfolge ist Längen- und Breitengrad
         "profile": "truck",
         "locale": "de",
         "calc_points": True,
-        "instructions": False,  # Keine detaillierten Fahranweisungen nötig
+        "instructions": False,  # Fahranweisungen nicht benötigt
         "geometry": True
     }
 
     try:
-        response = requests.post(url, json=payload)
-        print(f"🔹 API-Request: Start={start_coords}, Ziel={end_coords}")
+        response = requests.get(url, params=params)  # Ändere zu GET
+        print(f"🔹 API-Request: Start={start_coords}, Ziel={end_coords}, Status-Code={response.status_code}")
+
         if response.status_code == 200:
             data = response.json()
-            print(f"📡 API Antwort: {data}")
+            print(f"📡 API Antwort: {json.dumps(data, indent=2)}")  # JSON schön formatiert ausgeben
             return data["paths"][0]["points"]
         else:
-            print(f"⚠️ Fehler bei der Routenberechnung: {response.json()}")
+            print(f"⚠️ Fehler bei der Routenberechnung: {response.text}")  # Fehlerausgabe im Klartext
             return None
     except Exception as e:
         print(f"⚠️ API-Fehler: {e}")
@@ -143,7 +144,7 @@ def update_map(selected_routes):
                                 weight=5,
                                 opacity=0.8
                             ).add_to(m)
-            except Exception as e:
+            except Exception as e:F
                 print(f"⚠️ Fehler bei Route {row['Route']}: {e}")
 
     # Karte speichern und anzeigen
