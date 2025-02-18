@@ -5,7 +5,7 @@ import folium
 from dash.dependencies import Input, Output
 import requests
 import json
-import polyline  # Zum Dekodieren der Route
+import polyline
 
 # GraphHopper API-Key
 GRAPHHOPPER_API_KEY = "045abf50-4e22-453a-b0a9-8374930f4e47"
@@ -18,7 +18,7 @@ df = pd.read_csv(file_path, delimiter=";", encoding="utf-8")
 df["Transporte pro Woche"] = pd.to_numeric(df["Transporte pro Woche"], errors='coerce')
 
 # Entferne Zeilen mit NaN-Werten in den wichtigen Spalten
-df = df.dropna(subset=["Transporte pro Woche", "Koordinaten Start", "Koordinaten Ziel"])
+df = df.dropna(subset=["Transporte pro Woche", "Koordinaten Start", "Koordinaten Ziel", "Google Maps Start", "Google Maps Ziel"])
 
 # Funktion zur Bereinigung der Koordinaten
 def clean_coordinates(coord_string):
@@ -78,7 +78,7 @@ def get_lkw_route(start_coords, end_coords):
         print(f"⚠️ API-Fehler: {e}")
         return None
 
-# Funktion zur Bestimmung der Farben für Linien & Marker
+# Funktion zur Farbbestimmung basierend auf Transporthäufigkeit
 def get_route_color(transporte):
     if transporte <= 10:
         return "green"
@@ -89,14 +89,13 @@ def get_route_color(transporte):
     else:
         return "red"
 
-# Callback zur Aktualisierung der Karte
 @app.callback(
     Output('map', 'srcDoc'),
     [Input('route-selector', 'value')]
 )
 def update_map(selected_routes):
     if not selected_routes or 'all' in selected_routes:
-        selected_routes = df['Route'].tolist()  # Alle Routen anzeigen
+        selected_routes = df['Route'].tolist()
 
     m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
 
@@ -112,50 +111,45 @@ def update_map(selected_routes):
     '''
     m.get_root().html.add_child(folium.Element(legend_html))
 
-    # Routen zeichnen
-    for index, row in df.iterrows():
+    segment_transports = {}
+
+    for _, row in df.iterrows():
         if row['Route'] in selected_routes:
-            try:
-                start_coords = row["Koordinaten Start"]
-                end_coords = row["Koordinaten Ziel"]
-                transporte = row["Transporte pro Woche"]
+            start_coords = row["Koordinaten Start"]
+            end_coords = row["Koordinaten Ziel"]
+            transporte = row["Transporte pro Woche"]
+            route_coords = get_lkw_route(start_coords, end_coords)
 
-                if start_coords and end_coords:
-                    route_coords = get_lkw_route(start_coords, end_coords)
-                    route_color = get_route_color(transporte)
+            if route_coords:
+                for i in range(len(route_coords) - 1):
+                    segment = (tuple(route_coords[i]), tuple(route_coords[i + 1]))
+                    segment_transports[segment] = segment_transports.get(segment, 0) + transporte
 
-                    if route_coords:
-                        folium.PolyLine(
-                            locations=[[p[0], p[1]] for p in route_coords],
-                            color=route_color,
-                            weight=5,
-                            opacity=0.8
-                        ).add_to(m)
+                folium.Marker(
+                    location=[start_coords[1], start_coords[0]],
+                    popup=f"<b>Start:</b> <a href='{row['Google Maps Start']}' target='_blank'>Google Maps</a>",
+                    icon=folium.Icon(color="blue", icon="play")
+                ).add_to(m)
 
-                    # Startpunkt mit Google Maps Link
-                    folium.Marker(
-                        location=[start_coords[1], start_coords[0]],
-                        popup=f"<b>Startpunkt:</b> {row['Route']}<br>"
-                              f"<a href='https://www.google.com/maps/search/?api=1&query={start_coords[1]},{start_coords[0]}' target='_blank'>Google Maps</a>",
-                        icon=folium.Icon(color="blue", icon="play")
-                    ).add_to(m)
+                folium.Marker(
+                    location=[end_coords[1], end_coords[0]],
+                    popup=f"<b>Ziel:</b> <a href='{row['Google Maps Ziel']}' target='_blank'>Google Maps</a>",
+                    icon=folium.Icon(color="red", icon="stop")
+                ).add_to(m)
 
-                    # Zielpunkt mit Google Maps Link
-                    folium.Marker(
-                        location=[end_coords[1], end_coords[0]],
-                        popup=f"<b>Zielpunkt:</b> {row['Route']}<br>"
-                              f"<a href='https://www.google.com/maps/search/?api=1&query={end_coords[1]},{end_coords[0]}' target='_blank'>Google Maps</a>",
-                        icon=folium.Icon(color="red", icon="stop")
-                    ).add_to(m)
-
-            except Exception as e:
-                print(f"⚠️ Fehler bei Route {row['Route']}: {e}")
+    for segment, transporte in segment_transports.items():
+        folium.PolyLine(
+            locations=[[p[0], p[1]] for p in segment],
+            color=get_route_color(transporte),
+            weight=5,
+            opacity=0.8,
+            tooltip=f"Transporte: {transporte}"  # Tooltip zeigt die Anzahl der Transporte
+        ).add_to(m)
 
     map_path = "map.html"
     m.save(map_path)
     return open(map_path, "r", encoding="utf-8").read()
 
-# Server starten
 if __name__ == '__main__':
     app.run_server(debug=True)
 server = app.server
