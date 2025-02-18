@@ -5,9 +5,9 @@ import folium
 from dash.dependencies import Input, Output
 import requests
 import json
-import polyline
+from collections import defaultdict
 
-# GraphHopper API-Key
+# GraphHopper API-Key (ersetze mit deinem eigenen API-Schlüssel)
 GRAPHHOPPER_API_KEY = "045abf50-4e22-453a-b0a9-8374930f4e47"
 
 # Einlesen der CSV-Datei mit den Routen
@@ -18,7 +18,7 @@ df = pd.read_csv(file_path, delimiter=";", encoding="utf-8")
 df["Transporte pro Woche"] = pd.to_numeric(df["Transporte pro Woche"], errors='coerce')
 
 # Entferne Zeilen mit NaN-Werten in den wichtigen Spalten
-df = df.dropna(subset=["Transporte pro Woche", "Koordinaten Start", "Koordinaten Ziel", "Google Maps Start", "Google Maps Ziel"])
+df = df.dropna(subset=["Transporte pro Woche", "Koordinaten Start", "Koordinaten Ziel", "Routen Google Maps"])
 
 # Funktion zur Bereinigung der Koordinaten
 def clean_coordinates(coord_string):
@@ -26,7 +26,7 @@ def clean_coordinates(coord_string):
         if isinstance(coord_string, str):
             coord_string = coord_string.replace("\t", "").replace(",", ".").strip()
             lat, lon = map(float, coord_string.split(";"))
-            return [lon, lat]  # GraphHopper erwartet [LON, LAT]
+            return [lon, lat]  # GraphHopper benötigt [LON, LAT]
     except Exception as e:
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
     return None
@@ -34,6 +34,9 @@ def clean_coordinates(coord_string):
 # Bereinige die Koordinaten
 df["Koordinaten Start"] = df["Koordinaten Start"].apply(clean_coordinates)
 df["Koordinaten Ziel"] = df["Koordinaten Ziel"].apply(clean_coordinates)
+
+# Entferne Zeilen mit fehlerhaften Koordinaten
+df.dropna(subset=["Koordinaten Start", "Koordinaten Ziel"], inplace=True)
 
 # Dash-App initialisieren
 app = dash.Dash(__name__)
@@ -55,7 +58,7 @@ app.layout = html.Div([
     html.Iframe(id="map", width="100%", height="600")
 ])
 
-# Funktion zur Berechnung der LKW-Route mit GraphHopper
+# API-Abfrage für die LKW-Route
 def get_lkw_route(start_coords, end_coords):
     url = "https://graphhopper.com/api/1/route"
     params = {
@@ -67,18 +70,20 @@ def get_lkw_route(start_coords, end_coords):
         "instructions": False,
         "geometry": True
     }
+
     try:
         response = requests.get(url, params=params)
         if response.status_code == 200:
             data = response.json()
-            if "paths" in data and len(data["paths"]) > 0:
-                return polyline.decode(data["paths"][0]["points"])  # Route dekodieren
-        return None
+            return data["paths"][0]["points"]
+        else:
+            print(f"⚠️ Fehler bei der Routenberechnung: {response.text}")
+            return None
     except Exception as e:
         print(f"⚠️ API-Fehler: {e}")
         return None
 
-# Funktion zur Farbbestimmung basierend auf Transporthäufigkeit
+# Funktion zur Bestimmung der Routenfarbe
 def get_route_color(transporte):
     if transporte <= 10:
         return "green"
@@ -89,67 +94,83 @@ def get_route_color(transporte):
     else:
         return "red"
 
+# Funktion zur Verarbeitung von überlappenden Routen
+def merge_routes(route_segments):
+    segment_counts = defaultdict(int)
+    
+    for segment, count in route_segments:
+        segment_counts[segment] += count
+
+    merged_routes = []
+    for segment, count in segment_counts.items():
+        merged_routes.append((segment, count))
+    
+    return merged_routes
+
+# Callback zur Aktualisierung der Karte
 @app.callback(
     Output('map', 'srcDoc'),
     [Input('route-selector', 'value')]
 )
 def update_map(selected_routes):
     if not selected_routes or 'all' in selected_routes:
-        selected_routes = df['Route'].tolist()
+        selected_routes = df['Route'].tolist()  # Alle Routen anzeigen
 
+    # Erstelle eine Karte mit Fokus auf Deutschland
     m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
 
-    # Legende hinzufügen
-    legend_html = '''
-    <div style="position: fixed; bottom: 50px; left: 50px; width: 180px; background-color: white; z-index:9999; padding: 10px; border-radius: 5px; border:1px solid black; font-size:14px">
-        <b>Legende: Transporte pro Woche</b><br>
-        <svg width="20" height="10"><line x1="0" y1="5" x2="20" y2="5" style="stroke:green;stroke-width:4"/></svg> 0 - 10<br>
-        <svg width="20" height="10"><line x1="0" y1="5" x2="20" y2="5" style="stroke:yellow;stroke-width:4"/></svg> 10 - 50<br>
-        <svg width="20" height="10"><line x1="0" y1="5" x2="20" y2="5" style="stroke:orange;stroke-width:4"/></svg> 50 - 100<br>
-        <svg width="20" height="10"><line x1="0" y1="5" x2="20" y2="5" style="stroke:red;stroke-width:4"/></svg> 100+<br>
-    </div>
-    '''
-    m.get_root().html.add_child(folium.Element(legend_html))
-
-    segment_transports = {}
+    route_segments = []
 
     for _, row in df.iterrows():
         if row['Route'] in selected_routes:
             start_coords = row["Koordinaten Start"]
             end_coords = row["Koordinaten Ziel"]
             transporte = row["Transporte pro Woche"]
-            route_coords = get_lkw_route(start_coords, end_coords)
+            google_maps_link = row["Routen Google Maps"]
 
-            if route_coords:
-                for i in range(len(route_coords) - 1):
-                    segment = (tuple(route_coords[i]), tuple(route_coords[i + 1]))
-                    segment_transports[segment] = segment_transports.get(segment, 0) + transporte
+            if start_coords and end_coords:
+                # Route abrufen
+                route_geometry = get_lkw_route(start_coords, end_coords)
+                if route_geometry:
+                    route_segments.append((route_geometry, transporte))
 
-                folium.Marker(
-                    location=[start_coords[1], start_coords[0]],
-                    popup=f"<b>Start:</b> <a href='{row['Google Maps Start']}' target='_blank'>Google Maps</a>",
-                    icon=folium.Icon(color="blue", icon="play")
-                ).add_to(m)
+                    # Startpunkt hinzufügen
+                    folium.Marker(
+                        location=[start_coords[1], start_coords[0]],
+                        popup=f"<b>Startpunkt</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>",
+                        icon=folium.Icon(color="blue", icon="info-sign")
+                    ).add_to(m)
 
-                folium.Marker(
-                    location=[end_coords[1], end_coords[0]],
-                    popup=f"<b>Ziel:</b> <a href='{row['Google Maps Ziel']}' target='_blank'>Google Maps</a>",
-                    icon=folium.Icon(color="red", icon="stop")
-                ).add_to(m)
+                    # Zielpunkt hinzufügen
+                    folium.Marker(
+                        location=[end_coords[1], end_coords[0]],
+                        popup=f"<b>Zielpunkt</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>",
+                        icon=folium.Icon(color="red", icon="info-sign")
+                    ).add_to(m)
 
-    for segment, transporte in segment_transports.items():
+    # Überlappende Routenabschnitte zusammenfassen
+    merged_routes = merge_routes(route_segments)
+
+    for route_geometry, transporte in merged_routes:
+        route_coords = json.loads(route_geometry)['coordinates']
+        route_color = get_route_color(transporte)
+        
+        # Linie mit Tooltip für Transporte
         folium.PolyLine(
-            locations=[[p[0], p[1]] for p in segment],
-            color=get_route_color(transporte),
+            locations=[[p[1], p[0]] for p in route_coords],
+            color=route_color,
             weight=5,
             opacity=0.8,
-            tooltip=f"Transporte: {transporte}"  # Tooltip zeigt die Anzahl der Transporte
+            tooltip=f"Transporte: {transporte}"
         ).add_to(m)
 
+    # Karte speichern und zurückgeben
     map_path = "map.html"
     m.save(map_path)
     return open(map_path, "r", encoding="utf-8").read()
 
+# Server starten
 if __name__ == '__main__':
     app.run_server(debug=True)
+
 server = app.server
