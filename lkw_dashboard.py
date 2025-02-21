@@ -64,6 +64,7 @@ app.layout = html.Div([
 ])
 
 # GraphHopper API-Abfrage
+
 def get_lkw_route(start_coords, end_coords):
     url = "https://graphhopper.com/api/1/route"
     params = {
@@ -82,9 +83,13 @@ def get_lkw_route(start_coords, end_coords):
         print(f"🔍 Status Code: {response.status_code}")
         
         if response.status_code == 200:
-            data = response.json()
-            if "paths" in data and data["paths"]:
-                return data["paths"][0]["points"]
+            if response.text:
+                data = response.json()
+                if "paths" in data and data["paths"]:
+                    return data["paths"][0]["points"]
+                else:
+                    print(f"⚠️ Keine Pfade in der Antwort für Koordinaten: {start_coords} -> {end_coords}")
+                    return None
             else:
                 print(f"⚠️ Leere Antwort von der API für Koordinaten: {start_coords} -> {end_coords}")
                 return None
@@ -133,7 +138,11 @@ def update_map(selected_routes):
             if start_coords and end_coords:
                 route_geometry = get_lkw_route(start_coords, end_coords)
                 if route_geometry:
-                    route_coords = json.loads(route_geometry)['coordinates']
+                    try:
+                        route_coords = json.loads(route_geometry)['coordinates']
+                    except json.JSONDecodeError:
+                        print(f"🚫 Fehler beim Dekodieren der Route für: {route_geometry}")
+                        continue
                     route_color = get_route_color(transporte)
 
                     # Route zeichnen
@@ -181,6 +190,5 @@ def update_map(selected_routes):
 # Server starten
 if __name__ == '__main__':
     app.run_server(debug=True)
-
 
 server = app.server
