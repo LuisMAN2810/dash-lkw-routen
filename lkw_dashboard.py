@@ -5,7 +5,6 @@ import folium
 from dash.dependencies import Input, Output
 import requests
 import json
-from collections import defaultdict
 
 # GraphHopper API-Key
 GRAPHHOPPER_API_KEY = "045abf50-4e22-453a-b0a9-8374930f4e47"
@@ -48,7 +47,7 @@ app = dash.Dash(__name__)
 
 # Dropdown-Optionen erstellen
 route_options = [{'label': 'Alle anzeigen', 'value': 'all'}] + [
-    {'label': row['Route'], 'value': row['Route']} for index, row in df.iterrows()
+    {'label': f"Route {index}", 'value': index} for index, row in df.iterrows()
 ]
 
 # Layout der App
@@ -64,7 +63,6 @@ app.layout = html.Div([
 ])
 
 # GraphHopper API-Abfrage
-
 def get_lkw_route(start_coords, end_coords):
     url = "https://graphhopper.com/api/1/route"
     params = {
@@ -74,7 +72,7 @@ def get_lkw_route(start_coords, end_coords):
         "locale": "de",
         "calc_points": True,
         "instructions": False,
-        "geometry": True
+        "geometry": "geojson"
     }
 
     try:
@@ -83,23 +81,15 @@ def get_lkw_route(start_coords, end_coords):
         print(f"🔍 Status Code: {response.status_code}")
         
         if response.status_code == 200:
-            if response.text:
-                data = response.json()
-                if "paths" in data and data["paths"]:
-                    return data["paths"][0]["points"]
-                else:
-                    print(f"⚠️ Keine Pfade in der Antwort für Koordinaten: {start_coords} -> {end_coords}")
-                    return None
+            data = response.json()
+            if "paths" in data and data["paths"]:
+                return data["paths"][0]["points"]
             else:
                 print(f"⚠️ Leere Antwort von der API für Koordinaten: {start_coords} -> {end_coords}")
                 return None
         else:
             print(f"❌ Fehler bei der API-Abfrage: {response.text}")
             return None
-    except json.JSONDecodeError as json_error:
-        print(f"🚫 JSON-Fehler beim Verarbeiten der API-Antwort: {json_error}")
-        print(f"Antworttext: {response.text}")
-        return None
     except Exception as e:
         print(f"⚠️ Unerwarteter Fehler: {e}")
         return None
@@ -122,65 +112,28 @@ def get_route_color(transporte):
 )
 def update_map(selected_routes):
     if not selected_routes or 'all' in selected_routes:
-        selected_routes = df['Route'].tolist()
+        selected_routes = df.index.tolist()
 
     # Karte initialisieren
     m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
 
-    # Überlappende Routen-Logik
-    for _, row in df.iterrows():
-        if row['Route'] in selected_routes:
+    for index, row in df.iterrows():
+        if index in selected_routes:
             start_coords = row["Koordinaten Start"]
             end_coords = row["Koordinaten Ziel"]
             transporte = row["Transporte pro Woche"]
-            google_maps_link = row["Routen Google Maps"]
 
             if start_coords and end_coords:
                 route_geometry = get_lkw_route(start_coords, end_coords)
                 if route_geometry:
-                    try:
-                        route_coords = json.loads(route_geometry)['coordinates']
-                    except json.JSONDecodeError:
-                        print(f"🚫 Fehler beim Dekodieren der Route für: {route_geometry}")
-                        continue
+                    route_coords = route_geometry["coordinates"]
                     route_color = get_route_color(transporte)
-
-                    # Route zeichnen
                     folium.PolyLine(
-                        locations=[[p[1], p[0]] for p in route_coords],
+                        locations=[[lat, lon] for lon, lat in route_coords],
                         color=route_color,
                         weight=5,
-                        opacity=0.8,
-                        tooltip=f"Transporte: {transporte}"
+                        opacity=0.8
                     ).add_to(m)
-
-                    # Start- und Zielpunkt hinzufügen
-                    folium.Marker(
-                        location=[start_coords[1], start_coords[0]],
-                        popup=f"Startpunkt<br><a href='{google_maps_link}' target='_blank'>Google Maps Link</a>",
-                        icon=folium.Icon(color="blue")
-                    ).add_to(m)
-
-                    folium.Marker(
-                        location=[end_coords[1], end_coords[0]],
-                        popup=f"Zielpunkt<br><a href='{google_maps_link}' target='_blank'>Google Maps Link</a>",
-                        icon=folium.Icon(color="red")
-                    ).add_to(m)
-
-    # Legende hinzufügen
-    legend_html = '''
-    <div style="
-        position: fixed; bottom: 20px; left: 20px; width: 200px; 
-        background-color: white; border:2px solid grey; z-index:9999; 
-        padding: 10px; border-radius: 10px; box-shadow: 2px 2px 10px grey;">
-        <h4>Legende: Transporte pro Woche</h4>
-        <p style="color:green;">0-10 Transporte</p>
-        <p style="color:yellow;">10-50 Transporte</p>
-        <p style="color:orange;">50-100 Transporte</p>
-        <p style="color:red;">100+ Transporte</p>
-    </div>
-    '''
-    m.get_root().html.add_child(folium.Element(legend_html))
 
     # Karte speichern und anzeigen
     map_path = "map.html"
