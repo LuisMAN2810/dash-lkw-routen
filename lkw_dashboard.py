@@ -26,7 +26,7 @@ def clean_coordinates(coord_string):
         if isinstance(coord_string, str):
             coord_string = coord_string.replace("\t", "").replace(",", ".").strip()
             lat, lon = map(float, coord_string.split(";"))
-            return [lon, lat]  # GraphHopper benötigt [LON, LAT]
+            return [lon, lat]
     except Exception as e:
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
     return None
@@ -109,7 +109,7 @@ def merge_routes(route_segments):
 )
 def update_map(selected_routes):
     if not selected_routes or 'all' in selected_routes:
-        selected_routes = df['Route'].tolist()  # Alle Routen anzeigen
+        selected_routes = df['Route'].tolist()
 
     # Erstelle eine Karte mit Fokus auf Deutschland
     m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
@@ -157,23 +157,17 @@ def update_map(selected_routes):
             tooltip=f"Transporte: {transporte}"
         ).add_to(m)
 
-    # Legende richtig einfügen
+    # Legende stabil hinzufügen
     legend_html = '''
-    <div style="position: absolute; bottom: 20px; left: 20px; width: 200px; background-color: white; 
-                border:2px solid grey; z-index:9999; padding: 10px; border-radius: 10px; box-shadow: 2px 2px 10px grey;">
+    <div style="
+        position: absolute; bottom: 20px; left: 20px; width: 200px; 
+        background-color: white; border:2px solid grey; z-index:9999; 
+        padding: 10px; border-radius: 10px; box-shadow: 2px 2px 10px grey;">
         <h4>Legende: Transporte pro Woche</h4>
-        <svg width="20" height="10">
-            <line x1="0" y1="5" x2="20" y2="5" style="stroke:green;stroke-width:4"/>
-        </svg> 0 - 10 Transporte<br>
-        <svg width="20" height="10">
-            <line x1="0" y1="5" x2="20" y2="5" style="stroke:yellow;stroke-width:4"/>
-        </svg> 10 - 50 Transporte<br>
-        <svg width="20" height="10">
-            <line x1="0" y1="5" x2="20" y2="5" style="stroke:orange;stroke-width:4"/>
-        </svg> 50 - 100 Transporte<br>
-        <svg width="20" height="10">
-            <line x1="0" y1="5" x2="20" y2="5" style="stroke:red;stroke-width:4"/>
-        </svg> 100+ Transporte
+        <p style="color:green;">0-10 Transporte</p>
+        <p style="color:yellow;">10-50 Transporte</p>
+        <p style="color:orange;">50-100 Transporte</p>
+        <p style="color:red;">100+ Transporte</p>
     </div>
     '''
     m.get_root().html.add_child(folium.Element(legend_html))
