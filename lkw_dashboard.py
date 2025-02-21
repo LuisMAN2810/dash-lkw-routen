@@ -63,6 +63,7 @@ app.layout = html.Div([
 ])
 
 # GraphHopper API-Abfrage
+# GraphHopper API-Abfrage
 def get_lkw_route(start_coords, end_coords):
     url = "https://graphhopper.com/api/1/route"
     params = {
@@ -72,7 +73,7 @@ def get_lkw_route(start_coords, end_coords):
         "locale": "de",
         "calc_points": True,
         "instructions": False,
-        "geometry": "geojson"
+        "geometry_format": "geojson"  # Verwende GeoJSON-Format direkt!
     }
 
     try:
@@ -83,13 +84,17 @@ def get_lkw_route(start_coords, end_coords):
         if response.status_code == 200:
             data = response.json()
             if "paths" in data and data["paths"]:
-                return data["paths"][0]["points"]
+                return data["paths"][0]["points"]  # GeoJSON direkt zurückgeben
             else:
                 print(f"⚠️ Leere Antwort von der API für Koordinaten: {start_coords} -> {end_coords}")
                 return None
         else:
             print(f"❌ Fehler bei der API-Abfrage: {response.text}")
             return None
+    except json.JSONDecodeError as json_error:
+        print(f"🚫 JSON-Fehler beim Verarbeiten der API-Antwort: {json_error}")
+        print(f"Antworttext: {response.text}")
+        return None
     except Exception as e:
         print(f"⚠️ Unerwarteter Fehler: {e}")
         return None
@@ -126,7 +131,7 @@ def update_map(selected_routes):
             if start_coords and end_coords:
                 route_geometry = get_lkw_route(start_coords, end_coords)
                 if route_geometry:
-                    route_coords = route_geometry["coordinates"]
+                   route_coords = route_geometry['coordinates'] if isinstance(route_geometry, dict) else json.loads(route_geometry)['coordinates']
                     route_color = get_route_color(transporte)
                     folium.PolyLine(
                         locations=[[lat, lon] for lon, lat in route_coords],
