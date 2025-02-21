@@ -78,14 +78,25 @@ def get_lkw_route(start_coords, end_coords):
 
     try:
         response = requests.get(url, params=params)
+        print(f"🔹 API Request sent with coordinates: {start_coords} -> {end_coords}")
+        print(f"🔍 Status Code: {response.status_code}")
+        
         if response.status_code == 200:
             data = response.json()
-            return data["paths"][0]["points"]
+            if "paths" in data and data["paths"]:
+                return data["paths"][0]["points"]
+            else:
+                print(f"⚠️ Leere Antwort von der API für Koordinaten: {start_coords} -> {end_coords}")
+                return None
         else:
-            print(f"⚠️ Fehler bei der Routenberechnung: {response.text}")
+            print(f"❌ Fehler bei der API-Abfrage: {response.text}")
             return None
+    except json.JSONDecodeError as json_error:
+        print(f"🚫 JSON-Fehler beim Verarbeiten der API-Antwort: {json_error}")
+        print(f"Antworttext: {response.text}")
+        return None
     except Exception as e:
-        print(f"⚠️ API-Fehler: {e}")
+        print(f"⚠️ Unerwarteter Fehler: {e}")
         return None
 
 # Routenfarbe bestimmen
@@ -170,5 +181,6 @@ def update_map(selected_routes):
 # Server starten
 if __name__ == '__main__':
     app.run_server(debug=True)
+
 
 server = app.server
