@@ -85,22 +85,28 @@ def get_route_color(transporte):
         return "orange"
     return "red"
 
-# Legende hinzufügen
+# Verbesserte Legende hinzufügen
 def add_legend(m):
     legend_html = '''
-     <div style="position: fixed; bottom: 50px; left: 50px; width: 200px; height: 150px; 
-     background-color: white; z-index:9999; padding: 10px; border:2px solid grey; border-radius:10px;">
-     <h4>Transporte pro Woche</h4>
-     <svg width="200" height="100">
-       <line x1="10" y1="20" x2="190" y2="20" style="stroke:green;stroke-width:4" />
-       <text x="10" y="35" font-size="12">1-10 Transporte</text>
-       <line x1="10" y1="50" x2="190" y2="50" style="stroke:yellow;stroke-width:4" />
-       <text x="10" y="65" font-size="12">11-50 Transporte</text>
-       <line x1="10" y1="80" x2="190" y2="80" style="stroke:orange;stroke-width:4" />
-       <text x="10" y="95" font-size="12">51-100 Transporte</text>
-       <line x1="10" y1="110" x2="190" y2="110" style="stroke:red;stroke-width:4" />
-       <text x="10" y="125" font-size="12">>100 Transporte</text>
-     </svg>
+     <div style="position: fixed; bottom: 50px; left: 50px; width: 220px; padding: 15px; background-color: white; 
+     box-shadow: 2px 2px 10px rgba(0,0,0,0.3); z-index:9999; border-radius:10px; font-family:Arial;">
+     <h4 style="margin: 0 0 10px 0; text-align:center;">Transporte pro Woche</h4>
+     <div style="display: flex; align-items: center; margin-bottom: 5px;">
+       <div style="width: 30px; height: 5px; background-color: green; margin-right: 10px;"></div>
+       <span>1-10 Transporte</span>
+     </div>
+     <div style="display: flex; align-items: center; margin-bottom: 5px;">
+       <div style="width: 30px; height: 5px; background-color: yellow; margin-right: 10px;"></div>
+       <span>11-50 Transporte</span>
+     </div>
+     <div style="display: flex; align-items: center; margin-bottom: 5px;">
+       <div style="width: 30px; height: 5px; background-color: orange; margin-right: 10px;"></div>
+       <span>51-100 Transporte</span>
+     </div>
+     <div style="display: flex; align-items: center;">
+       <div style="width: 30px; height: 5px; background-color: red; margin-right: 10px;"></div>
+       <span>>100 Transporte</span>
+     </div>
      </div>
     '''
     m.get_root().html.add_child(folium.Element(legend_html))
@@ -143,7 +149,7 @@ def update_map(selected_routes):
                     icon=folium.Icon(color="red")
                 ).add_to(m)
 
-    # Legende hinzufügen
+    # Verbesserte Legende hinzufügen
     add_legend(m)
 
     try:
