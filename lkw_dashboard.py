@@ -7,7 +7,7 @@ import requests
 import json
 from collections import defaultdict
 
-# GraphHopper API-Key (ersetze mit deinem eigenen API-Schlüssel)
+# GraphHopper API-Key
 GRAPHHOPPER_API_KEY = "045abf50-4e22-453a-b0a9-8374930f4e47"
 
 # Einlesen der CSV-Datei mit den Routen
@@ -97,15 +97,10 @@ def get_route_color(transporte):
 # Funktion zur Verarbeitung von überlappenden Routen
 def merge_routes(route_segments):
     segment_counts = defaultdict(int)
-    
     for segment, count in route_segments:
         segment_counts[segment] += count
 
-    merged_routes = []
-    for segment, count in segment_counts.items():
-        merged_routes.append((segment, count))
-    
-    return merged_routes
+    return [(segment, count) for segment, count in segment_counts.items()]
 
 # Callback zur Aktualisierung der Karte
 @app.callback(
@@ -129,7 +124,6 @@ def update_map(selected_routes):
             google_maps_link = row["Routen Google Maps"]
 
             if start_coords and end_coords:
-                # Route abrufen
                 route_geometry = get_lkw_route(start_coords, end_coords)
                 if route_geometry:
                     route_segments.append((route_geometry, transporte))
@@ -154,8 +148,7 @@ def update_map(selected_routes):
     for route_geometry, transporte in merged_routes:
         route_coords = json.loads(route_geometry)['coordinates']
         route_color = get_route_color(transporte)
-        
-        # Linie mit Tooltip für Transporte
+
         folium.PolyLine(
             locations=[[p[1], p[0]] for p in route_coords],
             color=route_color,
@@ -164,9 +157,9 @@ def update_map(selected_routes):
             tooltip=f"Transporte: {transporte}"
         ).add_to(m)
 
-    # Legende einfügen
+    # Legende richtig einfügen
     legend_html = '''
-    <div style="position: fixed; bottom: 50px; left: 50px; width: 200px; background-color: white; 
+    <div style="position: absolute; bottom: 20px; left: 20px; width: 200px; background-color: white; 
                 border:2px solid grey; z-index:9999; padding: 10px; border-radius: 10px; box-shadow: 2px 2px 10px grey;">
         <h4>Legende: Transporte pro Woche</h4>
         <svg width="20" height="10">
