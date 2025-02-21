@@ -10,15 +10,20 @@ from collections import defaultdict
 # GraphHopper API-Key
 GRAPHHOPPER_API_KEY = "045abf50-4e22-453a-b0a9-8374930f4e47"
 
-# Einlesen der CSV-Datei mit den Routen
+# Einlesen der CSV-Datei
 file_path = "Datenblatt Routenanalyse .csv"
 df = pd.read_csv(file_path, delimiter=";", encoding="utf-8")
 
-# Umwandlung der Spalte "Transporte pro Woche" in Integer
+# Spalten prüfen
+required_columns = ["Transporte pro Woche", "Koordinaten Start", "Koordinaten Ziel", "Routen Google Maps"]
+if not all(col in df.columns for col in required_columns):
+    raise ValueError("Eine oder mehrere Spalten fehlen in der CSV-Datei!")
+
+# Umwandlung der Transporte-Spalte
 df["Transporte pro Woche"] = pd.to_numeric(df["Transporte pro Woche"], errors='coerce')
 
-# Entferne Zeilen mit NaN-Werten in den wichtigen Spalten
-df = df.dropna(subset=["Transporte pro Woche", "Koordinaten Start", "Koordinaten Ziel", "Routen Google Maps"])
+# Entfernen von NaN-Werten
+df.dropna(subset=required_columns, inplace=True)
 
 # Funktion zur Bereinigung der Koordinaten
 def clean_coordinates(coord_string):
@@ -28,20 +33,20 @@ def clean_coordinates(coord_string):
             lat, lon = map(float, coord_string.split(";"))
             return [lon, lat]
     except Exception as e:
-        print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
+        print(f"⚠️ Fehler bei der Koordinatenumwandlung: {e}")
     return None
 
-# Bereinige die Koordinaten
+# Koordinaten bereinigen
 df["Koordinaten Start"] = df["Koordinaten Start"].apply(clean_coordinates)
 df["Koordinaten Ziel"] = df["Koordinaten Ziel"].apply(clean_coordinates)
 
-# Entferne Zeilen mit fehlerhaften Koordinaten
+# Entfernen von fehlerhaften Koordinaten
 df.dropna(subset=["Koordinaten Start", "Koordinaten Ziel"], inplace=True)
 
 # Dash-App initialisieren
 app = dash.Dash(__name__)
 
-# Dropdown-Optionen aus der CSV-Datei laden
+# Dropdown-Optionen erstellen
 route_options = [{'label': 'Alle anzeigen', 'value': 'all'}] + [
     {'label': row['Route'], 'value': row['Route']} for index, row in df.iterrows()
 ]
@@ -58,7 +63,7 @@ app.layout = html.Div([
     html.Iframe(id="map", width="100%", height="600")
 ])
 
-# API-Abfrage für die LKW-Route
+# GraphHopper API-Abfrage
 def get_lkw_route(start_coords, end_coords):
     url = "https://graphhopper.com/api/1/route"
     params = {
@@ -83,7 +88,7 @@ def get_lkw_route(start_coords, end_coords):
         print(f"⚠️ API-Fehler: {e}")
         return None
 
-# Funktion zur Bestimmung der Routenfarbe
+# Routenfarbe bestimmen
 def get_route_color(transporte):
     if transporte <= 10:
         return "green"
@@ -94,14 +99,6 @@ def get_route_color(transporte):
     else:
         return "red"
 
-# Funktion zur Verarbeitung von überlappenden Routen
-def merge_routes(route_segments):
-    segment_counts = defaultdict(int)
-    for segment, count in route_segments:
-        segment_counts[segment] += count
-
-    return [(segment, count) for segment, count in segment_counts.items()]
-
 # Callback zur Aktualisierung der Karte
 @app.callback(
     Output('map', 'srcDoc'),
@@ -111,11 +108,10 @@ def update_map(selected_routes):
     if not selected_routes or 'all' in selected_routes:
         selected_routes = df['Route'].tolist()
 
-    # Erstelle eine Karte mit Fokus auf Deutschland
+    # Karte initialisieren
     m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
 
-    route_segments = []
-
+    # Überlappende Routen-Logik
     for _, row in df.iterrows():
         if row['Route'] in selected_routes:
             start_coords = row["Koordinaten Start"]
@@ -126,41 +122,35 @@ def update_map(selected_routes):
             if start_coords and end_coords:
                 route_geometry = get_lkw_route(start_coords, end_coords)
                 if route_geometry:
-                    route_segments.append((route_geometry, transporte))
+                    route_coords = json.loads(route_geometry)['coordinates']
+                    route_color = get_route_color(transporte)
 
-                    # Startpunkt hinzufügen
+                    # Route zeichnen
+                    folium.PolyLine(
+                        locations=[[p[1], p[0]] for p in route_coords],
+                        color=route_color,
+                        weight=5,
+                        opacity=0.8,
+                        tooltip=f"Transporte: {transporte}"
+                    ).add_to(m)
+
+                    # Start- und Zielpunkt hinzufügen
                     folium.Marker(
                         location=[start_coords[1], start_coords[0]],
-                        popup=f"<b>Startpunkt</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>",
-                        icon=folium.Icon(color="blue", icon="info-sign")
+                        popup=f"Startpunkt<br><a href='{google_maps_link}' target='_blank'>Google Maps Link</a>",
+                        icon=folium.Icon(color="blue")
                     ).add_to(m)
 
-                    # Zielpunkt hinzufügen
                     folium.Marker(
                         location=[end_coords[1], end_coords[0]],
-                        popup=f"<b>Zielpunkt</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>",
-                        icon=folium.Icon(color="red", icon="info-sign")
+                        popup=f"Zielpunkt<br><a href='{google_maps_link}' target='_blank'>Google Maps Link</a>",
+                        icon=folium.Icon(color="red")
                     ).add_to(m)
 
-    # Überlappende Routenabschnitte zusammenfassen
-    merged_routes = merge_routes(route_segments)
-
-    for route_geometry, transporte in merged_routes:
-        route_coords = json.loads(route_geometry)['coordinates']
-        route_color = get_route_color(transporte)
-
-        folium.PolyLine(
-            locations=[[p[1], p[0]] for p in route_coords],
-            color=route_color,
-            weight=5,
-            opacity=0.8,
-            tooltip=f"Transporte: {transporte}"
-        ).add_to(m)
-
-    # Legende stabil hinzufügen
+    # Legende hinzufügen
     legend_html = '''
     <div style="
-        position: absolute; bottom: 20px; left: 20px; width: 200px; 
+        position: fixed; bottom: 20px; left: 20px; width: 200px; 
         background-color: white; border:2px solid grey; z-index:9999; 
         padding: 10px; border-radius: 10px; box-shadow: 2px 2px 10px grey;">
         <h4>Legende: Transporte pro Woche</h4>
@@ -172,7 +162,7 @@ def update_map(selected_routes):
     '''
     m.get_root().html.add_child(folium.Element(legend_html))
 
-    # Karte speichern und zurückgeben
+    # Karte speichern und anzeigen
     map_path = "map.html"
     m.save(map_path)
     return open(map_path, "r", encoding="utf-8").read()
