@@ -8,7 +8,7 @@ import json
 import polyline
 from collections import defaultdict
 
-# GraphHopper API-Key (ersetze mit deinem eigenen)
+# GraphHopper API-Key
 GRAPHHOPPER_API_KEY = "045abf50-4e22-453a-b0a9-8374930f4e47"
 
 # CSV-Datei einlesen
@@ -85,19 +85,34 @@ def get_route_color(transporte):
         return "orange"
     return "red"
 
+# Legende hinzufügen
+def add_legend(m):
+    legend_html = '''
+     <div style="position: fixed; bottom: 50px; left: 50px; width: 200px; height: 150px; 
+     background-color: white; z-index:9999; padding: 10px; border:2px solid grey; border-radius:10px;">
+     <h4>Transporte pro Woche</h4>
+     <svg width="200" height="100">
+       <line x1="10" y1="20" x2="190" y2="20" style="stroke:green;stroke-width:4" />
+       <text x="10" y="35" font-size="12">1-10 Transporte</text>
+       <line x1="10" y1="50" x2="190" y2="50" style="stroke:yellow;stroke-width:4" />
+       <text x="10" y="65" font-size="12">11-50 Transporte</text>
+       <line x1="10" y1="80" x2="190" y2="80" style="stroke:orange;stroke-width:4" />
+       <text x="10" y="95" font-size="12">51-100 Transporte</text>
+       <line x1="10" y1="110" x2="190" y2="110" style="stroke:red;stroke-width:4" />
+       <text x="10" y="125" font-size="12">>100 Transporte</text>
+     </svg>
+     </div>
+    '''
+    m.get_root().html.add_child(folium.Element(legend_html))
+
 @app.callback(
     Output('map', 'srcDoc'),
     [Input('route-selector', 'value')]
 )
 def update_map(selected_routes):
-    print("🔍 update_map() wurde aufgerufen")
-
     if not selected_routes or 'all' in selected_routes:
         selected_routes = df['Route'].tolist()
-    
-    print(f"📌 Gewählte Routen: {selected_routes}")
 
-    # Erstelle eine Karte
     m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
 
     for _, row in df.iterrows():
@@ -107,8 +122,6 @@ def update_map(selected_routes):
             transporte = row["Transporte pro Woche"]
             google_maps_link = row["Routen Google Maps"]
 
-            print(f"🚚 Verarbeite Route: {row['Route']} mit {transporte} Transporten")
-            
             route_geometry = get_lkw_route(start_coords, end_coords)
             if route_geometry:
                 folium.PolyLine(
@@ -130,11 +143,12 @@ def update_map(selected_routes):
                     icon=folium.Icon(color="red")
                 ).add_to(m)
 
-    # Karte speichern
+    # Legende hinzufügen
+    add_legend(m)
+
     try:
         map_path = "map.html"
         m.save(map_path)
-        print(f"✅ Karte gespeichert unter {map_path}")
         return open(map_path, "r", encoding="utf-8").read()
     except Exception as e:
         print(f"❌ Fehler beim Speichern der Karte: {e}")
@@ -144,4 +158,3 @@ if __name__ == '__main__':
     app.run_server(debug=True)
 
 server = app.server
-
