@@ -3,10 +3,9 @@ from dash import dcc, html
 import pandas as pd
 import folium
 from dash.dependencies import Input, Output
+from folium.plugins import HeatMap
+import numpy as np
 import requests
-import json
-import polyline
-from collections import defaultdict
 
 # GraphHopper API-Key
 GRAPHHOPPER_API_KEY = "045abf50-4e22-453a-b0a9-8374930f4e47"
@@ -41,6 +40,11 @@ route_options = [{'label': 'Alle anzeigen', 'value': 'all'}] + [
     {'label': row['Route'], 'value': row['Route']} for _, row in df.iterrows()
 ]
 
+view_options = [
+    {'label': 'Routen-Ansicht', 'value': 'routes'},
+    {'label': 'Heatmap-Analyse', 'value': 'heatmap'}
+]
+
 app.layout = html.Div([
     html.H1("LKW Routen-Dashboard"),
     dcc.Dropdown(
@@ -49,108 +53,98 @@ app.layout = html.Div([
         multi=True,
         placeholder="Wähle eine Route"
     ),
+    dcc.RadioItems(
+        id='view-selector',
+        options=view_options,
+        value='routes',
+        labelStyle={'display': 'inline-block', 'margin': '10px'}
+    ),
     html.Iframe(id="map", width="100%", height="600")
 ])
 
-# API-Abfrage
-def get_lkw_route(start_coords, end_coords):
-    url = "https://graphhopper.com/api/1/route"
-    params = {
-        "key": GRAPHHOPPER_API_KEY,
-        "point": [f"{start_coords[1]},{start_coords[0]}", f"{end_coords[1]},{end_coords[0]}"],
-        "profile": "truck",
-        "locale": "de",
-        "calc_points": True,
-        "instructions": False,
-        "geometry": True
-    }
-    try:
-        response = requests.get(url, params=params)
-        if response.status_code == 200:
-            data = response.json()
-            return polyline.decode(data["paths"][0]["points"])
-        else:
-            print(f"⚠️ API-Fehler: {response.text}")
-    except Exception as e:
-        print(f"⚠️ API-Verbindungsfehler: {e}")
-    return None
+# Funktion zur Interpolation von Koordinaten zwischen Start- und Zielpunkten
+def interpolate_route(start_coords, end_coords, num_points=10):
+    lat_points = np.linspace(start_coords[1], end_coords[1], num_points)
+    lon_points = np.linspace(start_coords[0], end_coords[0], num_points)
+    return list(zip(lat_points, lon_points))
 
-# Farben nach Transportmenge
-def get_route_color(transporte):
-    if transporte <= 10:
-        return "green"
-    elif transporte <= 50:
-        return "yellow"
-    elif transporte <= 100:
-        return "orange"
-    return "red"
-
-# Verbesserte Legende hinzufügen
+# Legende für die Heatmap hinzufügen
 def add_legend(m):
-    legend_html = '''
-     <div style="position: fixed; bottom: 50px; left: 50px; width: 220px; padding: 15px; background-color: white; 
-     box-shadow: 2px 2px 10px rgba(0,0,0,0.3); z-index:9999; border-radius:10px; font-family:Arial;">
-     <h4 style="margin: 0 0 10px 0; text-align:center;">Transporte pro Woche</h4>
-     <div style="display: flex; align-items: center; margin-bottom: 5px;">
-       <div style="width: 30px; height: 5px; background-color: green; margin-right: 10px;"></div>
-       <span>1-10 Transporte</span>
-     </div>
-     <div style="display: flex; align-items: center; margin-bottom: 5px;">
-       <div style="width: 30px; height: 5px; background-color: yellow; margin-right: 10px;"></div>
-       <span>11-50 Transporte</span>
-     </div>
-     <div style="display: flex; align-items: center; margin-bottom: 5px;">
-       <div style="width: 30px; height: 5px; background-color: orange; margin-right: 10px;"></div>
-       <span>51-100 Transporte</span>
-     </div>
-     <div style="display: flex; align-items: center;">
-       <div style="width: 30px; height: 5px; background-color: red; margin-right: 10px;"></div>
-       <span>>100 Transporte</span>
-     </div>
-     </div>
-    '''
+    legend_html = """
+    <div style="position: fixed; bottom: 50px; left: 50px; width: 250px; height: 140px; 
+    background-color: white; border:2px solid grey; z-index:9999; font-size:14px; box-shadow: 2px 2px 10px rgba(0,0,0,0.3); border-radius: 10px; padding: 10px; font-family: Arial, sans-serif;">
+        <h4 style="margin-top: 0; text-align: center;">Transportdichte</h4>
+        <div style="display: flex; align-items: center; margin-bottom: 5px;">
+            <div style="width: 30px; height: 10px; background-color: #00ff00; margin-right: 10px;"></div>
+            Niedrig
+        </div>
+        <div style="display: flex; align-items: center; margin-bottom: 5px;">
+            <div style="width: 30px; height: 10px; background-color: #ffff00; margin-right: 10px;"></div>
+            Mittel
+        </div>
+        <div style="display: flex; align-items: center;">
+            <div style="width: 30px; height: 10px; background-color: #ff0000; margin-right: 10px;"></div>
+            Hoch
+        </div>
+    </div>
+    """
     m.get_root().html.add_child(folium.Element(legend_html))
 
 @app.callback(
     Output('map', 'srcDoc'),
-    [Input('route-selector', 'value')]
+    [Input('route-selector', 'value'), Input('view-selector', 'value')]
 )
-def update_map(selected_routes):
+def update_map(selected_routes, selected_view):
     if not selected_routes or 'all' in selected_routes:
         selected_routes = df['Route'].tolist()
 
     m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
 
-    for _, row in df.iterrows():
-        if row['Route'] in selected_routes:
-            start_coords = row["Koordinaten Start"]
-            end_coords = row["Koordinaten Ziel"]
-            transporte = row["Transporte pro Woche"]
-            google_maps_link = row["Routen Google Maps"]
+    if selected_view == 'routes':
+        for _, row in df.iterrows():
+            if row['Route'] in selected_routes:
+                start_coords = row["Koordinaten Start"]
+                end_coords = row["Koordinaten Ziel"]
+                transporte = row["Transporte pro Woche"]
+                google_maps_link = row["Routen Google Maps"]
 
-            route_geometry = get_lkw_route(start_coords, end_coords)
-            if route_geometry:
                 folium.PolyLine(
-                    route_geometry, 
-                    color=get_route_color(transporte), 
-                    weight=5, 
+                    [start_coords, end_coords],
+                    color='blue',
+                    weight=5,
                     tooltip=folium.Tooltip(f"Transporte: {transporte}")
                 ).add_to(m)
 
                 folium.Marker(
-                    location=[start_coords[1], start_coords[0]],
+                    location=start_coords,
                     popup=folium.Popup(f"<b>Start</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
                     icon=folium.Icon(color="blue")
                 ).add_to(m)
 
                 folium.Marker(
-                    location=[end_coords[1], end_coords[0]],
+                    location=end_coords,
                     popup=folium.Popup(f"<b>Ziel</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
                     icon=folium.Icon(color="red")
                 ).add_to(m)
+    else:
+        # Heatmap mit interpolierten Punkten erstellen
+        heatmap_data = []
+        for _, row in df.iterrows():
+            if row['Route'] in selected_routes:
+                start_coords = row["Koordinaten Start"]
+                end_coords = row["Koordinaten Ziel"]
+                transports = int(row["Transporte pro Woche"])
+                route_points = interpolate_route(start_coords, end_coords, num_points=20)
+                heatmap_data.extend(route_points * transports)
 
-    # Verbesserte Legende hinzufügen
-    add_legend(m)
+        HeatMap(
+            heatmap_data,
+            radius=10,
+            blur=15,
+            max_zoom=1,
+            gradient={0.2: 'green', 0.5: 'yellow', 0.8: 'red'}
+        ).add_to(m)
+        add_legend(m)
 
     try:
         map_path = "map.html"
