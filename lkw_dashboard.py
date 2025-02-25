@@ -98,7 +98,6 @@ app.layout = html.Div([
         value='routes',
         labelStyle={'display': 'inline-block', 'margin': '10px'}
     ),
-    html.Div(id="loading-message", children=""),
     html.Iframe(id="map", width="100%", height="600")
 ])
 
@@ -112,7 +111,7 @@ def get_route_color(transporte):
         return "orange"
     return "red"
 
-# Legende für die Heatmap
+# Legende hinzufügen
 def add_legend(m):
     legend_html = """
     <div style="position: fixed; bottom: 50px; left: 50px; width: 250px; height: 140px;
@@ -136,7 +135,7 @@ def add_legend(m):
 
 # Callback zum Aktualisieren der Karte
 @app.callback(
-    [Output('map', 'srcDoc'), Output('loading-message', 'children')],
+    Output('map', 'srcDoc'),
     [Input('route-selector', 'value'), Input('view-selector', 'value')]
 )
 def update_map(selected_routes, selected_view):
@@ -144,7 +143,6 @@ def update_map(selected_routes, selected_view):
         selected_routes = df['Route'].tolist()
 
     m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
-    loading_message = "Lade Routen und Heatmap..."
 
     if selected_view == 'routes':
         for _, row in df.iterrows():
@@ -152,6 +150,7 @@ def update_map(selected_routes, selected_view):
                 start_coords = row["Koordinaten Start"]
                 end_coords = row["Koordinaten Ziel"]
                 transporte = row["Transporte pro Woche"]
+                google_maps_link = row["Routen Google Maps"]
 
                 route_geometry = get_lkw_route(start_coords, end_coords)
 
@@ -163,6 +162,18 @@ def update_map(selected_routes, selected_view):
                         tooltip=f"Route: {row['Route']} - Transporte pro Woche: {transporte}"
                     ).add_to(m)
 
+                    folium.Marker(
+                        location=start_coords,
+                        popup=folium.Popup(f"<b>Start</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
+                        icon=folium.Icon(color="blue")
+                    ).add_to(m)
+
+                    folium.Marker(
+                        location=end_coords,
+                        popup=folium.Popup(f"<b>Ziel</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
+                        icon=folium.Icon(color="red")
+                    ).add_to(m)
+        add_legend(m)
     else:
         heatmap_data = []
         for _, row in df.iterrows():
@@ -187,11 +198,10 @@ def update_map(selected_routes, selected_view):
     try:
         map_path = "map.html"
         m.save(map_path)
-        loading_message = "Karte erfolgreich geladen."
-        return open(map_path, "r", encoding="utf-8").read(), loading_message
+        return open(map_path, "r", encoding="utf-8").read()
     except Exception as e:
         print(f"❌ Fehler beim Speichern der Karte: {e}")
-        return "", "Fehler beim Laden der Karte!"
+        return ""
 
 # Server starten
 if __name__ == '__main__':
