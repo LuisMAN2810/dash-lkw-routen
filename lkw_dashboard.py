@@ -5,12 +5,15 @@ import folium
 from dash.dependencies import Input, Output
 from folium.plugins import HeatMap
 import numpy as np
+import requests
+import polyline
 
-# CSV-Datei einlesen mit utf-8-sig zur Entfernung der BOM-Markierung
+# GraphHopper API-Key
+GRAPHHOPPER_API_KEY = "045abf50-4e22-453a-b0a9-8374930f4e47"
+
+# CSV-Datei einlesen
 file_path = "Datenblatt Routenanalyse .csv"
 df = pd.read_csv(file_path, delimiter=";", encoding="utf-8-sig")
-
-# Spaltennamen bereinigen (entfernt Leerzeichen und vereinheitlicht die Schreibweise)
 df.columns = df.columns.str.strip()
 
 # Rename der falschen Spalte
@@ -33,6 +36,29 @@ df["Transporte pro Woche"] = pd.to_numeric(df["Transporte pro Woche"], errors='c
 df["Koordinaten Start"] = df["Koordinaten Start"].apply(clean_coordinates)
 df["Koordinaten Ziel"] = df["Koordinaten Ziel"].apply(clean_coordinates)
 df.dropna(subset=["Transporte pro Woche", "Koordinaten Start", "Koordinaten Ziel", "Routen Google Maps"], inplace=True)
+
+# Funktion zur Routenberechnung über die GraphHopper API
+def get_lkw_route(start_coords, end_coords):
+    url = "https://graphhopper.com/api/1/route"
+    params = {
+        "key": GRAPHHOPPER_API_KEY,
+        "point": [f"{start_coords[0]},{start_coords[1]}", f"{end_coords[0]},{end_coords[1]}"],
+        "profile": "truck",
+        "locale": "de",
+        "calc_points": True,
+        "instructions": False,
+        "geometry": True
+    }
+    try:
+        response = requests.get(url, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            return polyline.decode(data["paths"][0]["points"])
+        else:
+            print(f"API-Fehler: {response.text}")
+    except Exception as e:
+        print(f"API-Verbindungsfehler: {e}")
+    return []
 
 # Dash-App initialisieren
 app = dash.Dash(__name__)
@@ -66,11 +92,15 @@ app.layout = html.Div([
     html.Iframe(id="map", width="100%", height="600")
 ])
 
-# Funktion zur Interpolation von Koordinaten zwischen Start- und Zielpunkten
-def interpolate_route(start_coords, end_coords, num_points=10):
-    lat_points = np.linspace(start_coords[0], end_coords[0], num_points)
-    lon_points = np.linspace(start_coords[1], end_coords[1], num_points)
-    return list(zip(lat_points, lon_points))
+# Funktion zur Einfärbung der Routen basierend auf der Transporthäufigkeit
+def get_route_color(transporte):
+    if transporte <= 10:
+        return "green"
+    elif transporte <= 50:
+        return "yellow"
+    elif transporte <= 100:
+        return "orange"
+    return "red"
 
 # Legende für die Heatmap
 def add_legend(m):
@@ -113,12 +143,15 @@ def update_map(selected_routes, selected_view):
                 transporte = row["Transporte pro Woche"]
                 google_maps_link = row["Routen Google Maps"]
 
-                folium.PolyLine(
-                    [start_coords, end_coords],
-                    color='blue',
-                    weight=5,
-                    tooltip=f"Route: {row['Route']} - Transporte pro Woche: {transporte}"
-                ).add_to(m)
+                route_geometry = get_lkw_route(start_coords, end_coords)
+
+                if route_geometry:
+                    folium.PolyLine(
+                        route_geometry,
+                        color=get_route_color(transporte),
+                        weight=5,
+                        tooltip=f"Route: {row['Route']} - Transporte pro Woche: {transporte}"
+                    ).add_to(m)
 
                 folium.Marker(
                     location=start_coords,
@@ -138,8 +171,10 @@ def update_map(selected_routes, selected_view):
                 start_coords = row["Koordinaten Start"]
                 end_coords = row["Koordinaten Ziel"]
                 transports = int(row["Transporte pro Woche"])
-                route_points = interpolate_route(start_coords, end_coords, num_points=20)
-                heatmap_data.extend(route_points * transports)
+                route_geometry = get_lkw_route(start_coords, end_coords)
+
+                if route_geometry:
+                    heatmap_data.extend(route_geometry * transports)
 
         HeatMap(
             heatmap_data,
