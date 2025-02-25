@@ -40,35 +40,6 @@ df["Koordinaten Start"] = df["Koordinaten Start"].apply(clean_coordinates)
 df["Koordinaten Ziel"] = df["Koordinaten Ziel"].apply(clean_coordinates)
 df.dropna(subset=["Transporte pro Woche", "Koordinaten Start", "Koordinaten Ziel", "Routen Google Maps"], inplace=True)
 
-# Funktion zur Routenberechnung mit Cache
-def get_lkw_route(start_coords, end_coords):
-    key = (tuple(start_coords), tuple(end_coords))
-    if key in route_cache:
-        return route_cache[key]
-    
-    url = "https://graphhopper.com/api/1/route"
-    params = {
-        "key": GRAPHHOPPER_API_KEY,
-        "point": [f"{start_coords[0]},{start_coords[1]}", f"{end_coords[0]},{end_coords[1]}"],
-        "profile": "truck",
-        "locale": "de",
-        "calc_points": True,
-        "instructions": False,
-        "geometry": True
-    }
-    try:
-        response = requests.get(url, params=params)
-        if response.status_code == 200:
-            data = response.json()
-            route = polyline.decode(data["paths"][0]["points"])
-            route_cache[key] = route
-            return route
-        else:
-            print(f"API-Fehler: {response.text}")
-    except Exception as e:
-        print(f"API-Verbindungsfehler: {e}")
-    return []
-
 # Dash-App initialisieren
 app = dash.Dash(__name__)
 
@@ -100,38 +71,6 @@ app.layout = html.Div([
     ),
     html.Iframe(id="map", width="100%", height="600")
 ])
-
-# Funktion zur Einfärbung der Routen basierend auf der Transporthäufigkeit
-def get_route_color(transporte):
-    if transporte <= 10:
-        return "green"
-    elif transporte <= 50:
-        return "yellow"
-    elif transporte <= 100:
-        return "orange"
-    return "red"
-
-# Legende hinzufügen
-def add_legend(m):
-    legend_html = """
-    <div style="position: fixed; bottom: 50px; left: 50px; width: 250px; height: 140px;
-    background-color: white; border:2px solid grey; z-index:9999; font-size:14px; box-shadow: 2px 2px 10px rgba(0,0,0,0.3); border-radius: 10px; padding: 10px; font-family: Arial, sans-serif;">
-        <h4 style="margin-top: 0; text-align: center;">Transportdichte</h4>
-        <div style="display: flex; align-items: center; margin-bottom: 5px;">
-            <div style="width: 30px; height: 10px; background-color: #00ff00; margin-right: 10px;"></div>
-            Niedrig
-        </div>
-        <div style="display: flex; align-items: center; margin-bottom: 5px;">
-            <div style="width: 30px; height: 10px; background-color: #ffff00; margin-right: 10px;"></div>
-            Mittel
-        </div>
-        <div style="display: flex; align-items: center;">
-            <div style="width: 30px; height: 10px; background-color: #ff0000; margin-right: 10px;"></div>
-            Hoch
-        </div>
-    </div>
-    """
-    m.get_root().html.add_child(folium.Element(legend_html))
 
 # Callback zum Aktualisieren der Karte
 @app.callback(
@@ -173,7 +112,6 @@ def update_map(selected_routes, selected_view):
                         popup=folium.Popup(f"<b>Ziel</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
                         icon=folium.Icon(color="red")
                     ).add_to(m)
-        add_legend(m)
     else:
         heatmap_data = []
         for _, row in df.iterrows():
@@ -184,26 +122,21 @@ def update_map(selected_routes, selected_view):
                 route_geometry = get_lkw_route(start_coords, end_coords)
 
                 if route_geometry:
-                    heatmap_data.extend(route_geometry * transports)
+                    valid_coords = [coord for coord in route_geometry if isinstance(coord, (list, tuple)) and len(coord) == 2]
+                    heatmap_data.extend(valid_coords * transports)
 
         HeatMap(
             heatmap_data,
-            radius=15,
-            blur=25,
+            radius=10,
+            blur=15,
             max_zoom=1,
             gradient={0.2: 'green', 0.5: 'yellow', 0.8: 'red'}
         ).add_to(m)
-        add_legend(m)
 
-    try:
-        map_path = "map.html"
-        m.save(map_path)
-        return open(map_path, "r", encoding="utf-8").read()
-    except Exception as e:
-        print(f"❌ Fehler beim Speichern der Karte: {e}")
-        return ""
+    map_path = "map.html"
+    m.save(map_path)
+    return open(map_path, "r", encoding="utf-8").read()
 
-# Server starten
 if __name__ == '__main__':
     app.run_server(debug=True)
 
