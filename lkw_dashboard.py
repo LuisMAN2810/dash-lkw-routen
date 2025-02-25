@@ -10,9 +10,8 @@ import numpy as np
 file_path = "Datenblatt Routenanalyse .csv"
 df = pd.read_csv(file_path, delimiter=";", encoding="ISO-8859-1")
 
-# Spalten bereinigen
-df["Transporte pro Woche"] = pd.to_numeric(df["Transporte pro Woche"], errors='coerce')
-df = df.dropna(subset=["Transporte pro Woche", "Koordinaten Start", "Koordinaten Ziel", "Routen Google Maps"])
+# Spaltennamen bereinigen (entfernt Leerzeichen und vereinheitlicht die Schreibweise)
+df.columns = df.columns.str.strip()
 
 # Funktion zur Bereinigung der Koordinaten
 def clean_coordinates(coord_string):
@@ -25,9 +24,11 @@ def clean_coordinates(coord_string):
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
     return None
 
+# Daten bereinigen
+df["Transporte pro Woche"] = pd.to_numeric(df["Transporte pro Woche"], errors='coerce')
 df["Koordinaten Start"] = df["Koordinaten Start"].apply(clean_coordinates)
 df["Koordinaten Ziel"] = df["Koordinaten Ziel"].apply(clean_coordinates)
-df.dropna(subset=["Koordinaten Start", "Koordinaten Ziel"], inplace=True)
+df.dropna(subset=["Transporte pro Woche", "Koordinaten Start", "Koordinaten Ziel", "Routen Google Maps"], inplace=True)
 
 # Dash-App initialisieren
 app = dash.Dash(__name__)
