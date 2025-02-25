@@ -5,14 +5,10 @@ import folium
 from dash.dependencies import Input, Output
 from folium.plugins import HeatMap
 import numpy as np
-import requests
-
-# GraphHopper API-Key
-GRAPHHOPPER_API_KEY = "045abf50-4e22-453a-b0a9-8374930f4e47"
 
 # CSV-Datei einlesen
 file_path = "Datenblatt Routenanalyse .csv"
-df = pd.read_csv(file_path, delimiter=";", encoding="utf-8")
+df = pd.read_csv(file_path, delimiter=";", encoding="ISO-8859-1")
 
 # Spalten bereinigen
 df["Transporte pro Woche"] = pd.to_numeric(df["Transporte pro Woche"], errors='coerce')
@@ -24,7 +20,7 @@ def clean_coordinates(coord_string):
         if isinstance(coord_string, str):
             coord_string = coord_string.replace("\t", "").replace(",", ".").strip()
             lat, lon = map(float, coord_string.split(";"))
-            return [lon, lat]
+            return [lat, lon]
     except Exception as e:
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
     return None
@@ -36,15 +32,18 @@ df.dropna(subset=["Koordinaten Start", "Koordinaten Ziel"], inplace=True)
 # Dash-App initialisieren
 app = dash.Dash(__name__)
 
+# Dropdown-Optionen für die Routen
 route_options = [{'label': 'Alle anzeigen', 'value': 'all'}] + [
     {'label': row['Route'], 'value': row['Route']} for _, row in df.iterrows()
 ]
 
+# Auswahl für die Ansicht
 view_options = [
     {'label': 'Routen-Ansicht', 'value': 'routes'},
     {'label': 'Heatmap-Analyse', 'value': 'heatmap'}
 ]
 
+# Layout der App
 app.layout = html.Div([
     html.H1("LKW Routen-Dashboard"),
     dcc.Dropdown(
@@ -64,14 +63,14 @@ app.layout = html.Div([
 
 # Funktion zur Interpolation von Koordinaten zwischen Start- und Zielpunkten
 def interpolate_route(start_coords, end_coords, num_points=10):
-    lat_points = np.linspace(start_coords[1], end_coords[1], num_points)
-    lon_points = np.linspace(start_coords[0], end_coords[0], num_points)
+    lat_points = np.linspace(start_coords[0], end_coords[0], num_points)
+    lon_points = np.linspace(start_coords[1], end_coords[1], num_points)
     return list(zip(lat_points, lon_points))
 
-# Legende für die Heatmap hinzufügen
+# Legende für die Heatmap
 def add_legend(m):
     legend_html = """
-    <div style="position: fixed; bottom: 50px; left: 50px; width: 250px; height: 140px; 
+    <div style="position: fixed; bottom: 50px; left: 50px; width: 250px; height: 140px;
     background-color: white; border:2px solid grey; z-index:9999; font-size:14px; box-shadow: 2px 2px 10px rgba(0,0,0,0.3); border-radius: 10px; padding: 10px; font-family: Arial, sans-serif;">
         <h4 style="margin-top: 0; text-align: center;">Transportdichte</h4>
         <div style="display: flex; align-items: center; margin-bottom: 5px;">
@@ -90,6 +89,7 @@ def add_legend(m):
     """
     m.get_root().html.add_child(folium.Element(legend_html))
 
+# Callback zum Aktualisieren der Karte
 @app.callback(
     Output('map', 'srcDoc'),
     [Input('route-selector', 'value'), Input('view-selector', 'value')]
@@ -112,7 +112,7 @@ def update_map(selected_routes, selected_view):
                     [start_coords, end_coords],
                     color='blue',
                     weight=5,
-                    tooltip=folium.Tooltip(f"Transporte: {transporte}")
+                    tooltip=f"Route: {row['Route']} - Transporte pro Woche: {transporte}"
                 ).add_to(m)
 
                 folium.Marker(
@@ -127,7 +127,6 @@ def update_map(selected_routes, selected_view):
                     icon=folium.Icon(color="red")
                 ).add_to(m)
     else:
-        # Heatmap mit interpolierten Punkten erstellen
         heatmap_data = []
         for _, row in df.iterrows():
             if row['Route'] in selected_routes:
@@ -154,6 +153,7 @@ def update_map(selected_routes, selected_view):
         print(f"❌ Fehler beim Speichern der Karte: {e}")
         return ""
 
+# Server starten
 if __name__ == '__main__':
     app.run_server(debug=True)
 
