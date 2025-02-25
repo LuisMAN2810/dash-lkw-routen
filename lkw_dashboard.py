@@ -188,8 +188,8 @@ def update_map(selected_routes, selected_view):
 
         HeatMap(
             heatmap_data,
-            radius=10,
-            blur=15,
+            radius=15,
+            blur=25,
             max_zoom=1,
             gradient={0.2: 'green', 0.5: 'yellow', 0.8: 'red'}
         ).add_to(m)
