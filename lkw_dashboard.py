@@ -6,12 +6,16 @@ from dash.dependencies import Input, Output
 from folium.plugins import HeatMap
 import numpy as np
 
-# CSV-Datei einlesen
+# CSV-Datei einlesen mit utf-8-sig zur Entfernung der BOM-Markierung
 file_path = "Datenblatt Routenanalyse .csv"
-df = pd.read_csv(file_path, delimiter=";", encoding="ISO-8859-1")
+df = pd.read_csv(file_path, delimiter=";", encoding="utf-8-sig")
 
 # Spaltennamen bereinigen (entfernt Leerzeichen und vereinheitlicht die Schreibweise)
 df.columns = df.columns.str.strip()
+
+# Rename der falschen Spalte
+if 'ï»¿Route' in df.columns:
+    df = df.rename(columns={'ï»¿Route': 'Route'})
 
 # Funktion zur Bereinigung der Koordinaten
 def clean_coordinates(coord_string):
