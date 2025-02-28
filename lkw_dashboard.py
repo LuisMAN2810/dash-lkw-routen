@@ -7,6 +7,7 @@ import requests
 import json
 import polyline
 from collections import defaultdict
+import re
 
 # OpenRouteService API-Key
 ORS_API_KEY = "5b3ce3597851110001cf6248f42ededae9b5414fb25591adaff63db4"
@@ -21,9 +22,14 @@ df = df.dropna(subset=["Transporte pro Woche", "Koordinaten Start", "Koordinaten
 def clean_coordinates(coord_string):
     try:
         if isinstance(coord_string, str):
+            coord_string = re.sub(r'[^0-9.,;\s]', '', coord_string)  # Entferne unerwartete Zeichen
             coord_string = coord_string.replace("\t", "").replace(",", ".").replace(";", ",").strip()
-            lat, lon = map(float, coord_string.split(","))
-            return [lon, lat]
+            parts = coord_string.split()
+            if len(parts) == 1:
+                parts = coord_string.split(",")
+            if len(parts) == 2:
+                lat, lon = map(float, parts)
+                return [lon, lat]
     except Exception as e:
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
     return None
@@ -132,18 +138,6 @@ def update_map(selected_routes):
                     color=get_route_color(transport_count[tuple(route_geometry[0])]), 
                     weight=5, 
                     tooltip=f"Transporte: {transport_count[tuple(route_geometry[0])]}"
-                ).add_to(m)
-                
-                folium.Marker(
-                    location=start_coords,
-                    popup=folium.Popup(f"<b>Start</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
-                    icon=folium.Icon(color="blue")
-                ).add_to(m)
-                
-                folium.Marker(
-                    location=end_coords,
-                    popup=folium.Popup(f"<b>Ziel</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
-                    icon=folium.Icon(color="red")
                 ).add_to(m)
     
     add_legend(m)
