@@ -1,34 +1,100 @@
-﻿Route;Start PLZ;Ziel PLZ;Koordinaten Start;Koordinaten Ziel;Anzahl von Empfänger-;Summe von Durschnittliche VG Transporte pro Woche;Summe von Durchschnittliche LG Transporte pro Woche;Transporte pro Woche;Routen Google Maps
-München Werk -> AS Salzgitter;DE 80995;DE 38239;"48.2167; 11.5667";"52.1500	; 10.3333";1;5;5;10;https://maps.app.goo.gl/tgd6st99aTHangMj8
-München Werk -> Brauenschweig;DE 80995;DE 38102;"48.2167; 11.5667";"52.2667; 10.5333";2;33;5;38;https://maps.app.goo.gl/s4sdE4rASbV2SNLc9
-Bad Rodach -> München Werk;DE 96476;DE 80995;"50.3500	; 10.8000";"48.2167; 11.5667";1;10,5;10,5;21;https://maps.app.goo.gl/UbtkX2jtsV2x55259
-Chmielow -> München Werk;PL 39-442;DE 80995;"50.5667; 21.6667";"48.2167; 11.5667";1;2;2;4;https://maps.app.goo.gl/rKU3M73xUuro4ypM8
-Friedrichshafen -> München Werk;DE 88046;DE 80995;"47.6500; 9.4833";"48.2167; 11.5667";1;17,5;17,5;35;https://maps.app.goo.gl/bjHmGCvqRQDMDS7o9
-Kraichtal- Gochsheim -> München Werk;DE 76703;DE 80995;"49.1333; 8.7000";"48.2167; 11.5667";1;4;4;8;https://maps.app.goo.gl/eL5epCmj5h5EMBVs5
-Lébény -> München Werk;HU 9155;DE 80995;"47.8000; 17.4167";"48.2167; 11.5667";1;8,5;8,5;17;https://maps.app.goo.gl/zMWtBJZh5eWc2B437
-Neustadt an der Donau -> München Werk;DE 93333;DE 80995;"48.8000; 11.7667";"48.2167; 11.5667";1;10,5;10,5;21;https://maps.app.goo.gl/8qLMAiGhAFAHnAk8A
-Nyrany -> München Werk;CZ 322 00;DE 80995;"49.7500; 13.3667";"48.2167; 11.5667";2;6;6;12;https://maps.app.goo.gl/G4iz7VA8yHv6cTX67
-Redwitz / Unterlangenstadt -> München Werk;DE 96257;DE 80995;"50.1667; 11.2167";"48.2167; 11.5667";1;2;2;4;https://maps.app.goo.gl/9QZioDu6VRCsRuQv6
-St. Aegyd A.N.-> München Werk;AT 3193;DE 80995;"47.8667; 15.4667";"48.2167; 11.5667";1;5,5;5,5;11;https://maps.app.goo.gl/mHbn7GTKSLDwWyV36
-Starachowice -> München Werk;PL 27200;DE 80995;"51.0667; 21.0667";"48.2167; 11.5667";1;10,5;10,5;21;https://maps.app.goo.gl/TLAXPL52Qiv9kNhs5
-Steyr -> München Werk;AT 4400;DE 80995;"48.0500; 14.4167";"48.2167; 11.5667";2;35;35;70;https://maps.app.goo.gl/i5BSybpb6NnTBCoJ9
-Straubing -> München Werk;DE 94315;DE 80995;"48.8833; 12.5667";"48.2167; 11.5667";1;10,5;10,5;21;https://maps.app.goo.gl/9W6hCDaY59EHk8Po8
-Skarbimierz -> München Werk;PL 49-318;DE 80995;"50.7500; 17.6500";"48.2167; 11.5667";1;21;21;42;https://maps.app.goo.gl/16CXn3in8LgvoAyh6
-Nürnberg -> München Werk;DE 90402;DE 80995;"49.4500; 11.0833";"48.2167; 11.5667";1;1,5;1,5;3;https://maps.app.goo.gl/C5St1xbuoYJ9y7ATA
-Września -> München Werk;PL 62300;DE 80995;"52.3167; 17.5667";"48.2167; 11.5667";1;73,5;73,5;147;https://maps.app.goo.gl/YX24Ra3vJnhD3An78
-Bruckmühl -> Niepolomice;DE 83052;PL 32-005;"47.8833; 11.9167";"50.0333; 20.2167";2;87,5;87,5;175;https://maps.app.goo.gl/sbnkuQAZGMSHyMhx9
-Ergersheim -> Niepolomice;DE 91465;PL 32-005;"49.5333; 10.3333";"50.0333; 20.2167";1;10,5;10,5;21;https://maps.app.goo.gl/RpQQybmxkPBfcJem7
-Ginsheim-Gustavsburg -> Niepolomice;DE 65462;PL 32-005;"49.9667; 8.3333";"50.0333; 20.2167";1;8;8;16;https://maps.app.goo.gl/MqWGurWvdqWsVfsz6
-Hannover -> Niepolomice;DE 30159;PL 32-005;"52.3667; 9.7333";"50.0333; 20.2167";1;10,5;7;17,5;https://maps.app.goo.gl/2EbtSHeWyndnZXg6A
-Kraichtal- Gochsheim -> Niepolomice;DE 76703;PL 32-005;"49.1333; 8.7000";"50.0333; 20.2167";1;10,5;10,5;21;https://maps.app.goo.gl/jqXxXyxjXmajZNJPA
-München Werk -> Niepolomice;DE 80995;PL 32-005;"48.2167; 11.5667";"50.0333; 20.2167";2;192,5;52,5;245;https://maps.app.goo.gl/Enk9NWcEeBGjcCQC7
-Neustadt an der Donau -> Niepolomice;DE 93333;PL 32-005;"48.8000; 11.7667";"50.0333; 20.2167";1;10;10;20;https://maps.app.goo.gl/zo56vfTj8LGjrsQe9
-Rosenheim -> Niepolomice;DE 83022;PL 32-005;"47.8500; 12.1333";"50.0333; 20.2167";2;66,5;66,5;133;https://maps.app.goo.gl/z1F9VxVYzN46AxBQ6
-Salzgitter -> Niepolomice;DE 38239;PL 32-005;"52.1500	; 10.3333";"50.0333; 20.2167";1;35;35;70;https://maps.app.goo.gl/GafZYwxfQXFZFi8p8
-Santhià -> Niepolomice;IT 13048;PL 32-005;"45.3667; 8.1667";"50.0333; 20.2167";2;19,5;19,5;39;https://maps.app.goo.gl/W3BPcDhqFnvKJP9f9
-Schrobenhausen -> Niepolomice;DE 86529;PL 32-005;"48.5667; 11.2667";"50.0333; 20.2167";1;8,5;2,5;11;https://maps.app.goo.gl/KZcgh56X7Yjk6LEM8
-Steyr -> Niepolomice;AT 4400;PL 32-005;"48.0500; 14.4167";"50.0333; 20.2167";1;73,5;73,5;147;https://maps.app.goo.gl/nDfq3C9qFijNsUxg7
-Sulzemoos -> Niepolomice;DE 85254;PL 32-005;"48.2833; 11.2667";"50.0333; 20.2167";3;63;63;126;https://maps.app.goo.gl/qzrXrf1VdX7veDA8A
-Arnstadt -> Nürnberg;DE 99310;DE 90441;"50.8333; 10.9500";"49.4167; 11.0833";1;35;10,5;45,5;https://maps.app.goo.gl/UjnPzQhkkgxhf2B6A
-München Werk ->Salzgitter;DE 80995;DE 38239;"48.2167; 11.5667";"52.1500	; 10.3333";1;5;5;10;https://maps.app.goo.gl/ZbrTbWcy7TscMmrk9
-Steyr -> Salzgitter;AT 4400;DE 38239;"48.0500; 14.4167";"52.1500	; 10.3333";1;14;14;28;https://maps.app.goo.gl/ZVHL4rgXBV6ZGfB3A
+﻿Route;Anschrift Lieferant;Start PLZ;Ziel PLZ;Koordinaten Start;Koordinaten Ziel;Anzahl von Empfänger-;Summe von Durschnittliche VG Transporte pro Woche;Summe von Durchschnittliche LG Transporte pro Woche;Transporte pro Woche;Routen Google Maps
+München Werk -> AS Salzgitter;"Dachauer Straße 667
+80995 München
+Deutschland";DE 80995;DE 38239;11.477112, 48.218301;10.424654, 52.145802;1;5;5;10;https://maps.app.goo.gl/tgd6st99aTHangMj8
+München Werk -> Brauenschweig;"Dachauer Straße 667
+80995 München
+Deutschland";DE 80995;DE 38102;11.477112, 48.218301;"52.2667; 10.5333";2;33;5;38;https://maps.app.goo.gl/s4sdE4rASbV2SNLc9
+Bad Rodach -> München Werk;"Werner-von-Siemens-Straße 6
+96476 Bad Rodach
+Deutschland";DE 96476;DE 80995;10.787276, 50.336515;11.477112, 48.218301;1;10,5;10,5;21;https://maps.app.goo.gl/UbtkX2jtsV2x55259
+Chmielow -> München Werk;"Strefowa 17
+39-442 Chmielow
+Polen";PL 39-442;DE 80995;21.634461, 50.518416;11.477112, 48.218301;1;2;2;4;https://maps.app.goo.gl/rKU3M73xUuro4ypM8
+Friedrichshafen -> München Werk;"Alfred Colsman Platz 1
+88046 Friedrichshafen
+Deutschland";DE 88046;DE 80995;9.473924338817598, 47.661521606318324;11.477112, 48.218301;1;17,5;17,5;35;https://maps.app.goo.gl/bjHmGCvqRQDMDS7o9
+Kraichtal- Gochsheim -> München Werk;"Alte Münzesheimerstr. 4
+76703 Kraichtal- Gochsheim
+Deutschland";DE 76703;DE 80995;8.742357194423677, 49.1091986739026;11.477112, 48.218301;1;4;4;8;https://maps.app.goo.gl/eL5epCmj5h5EMBVs5
+Lébény -> München Werk;"Göbeház park 8.
+9155 Lébény
+Ungarn";HU 9155;DE 80995;17.41315305233002, 47.747338823683016;11.477112, 48.218301;1;8,5;8,5;17;https://maps.app.goo.gl/zMWtBJZh5eWc2B437
+Neustadt an der Donau -> München Werk;"Umbertshausener Weg 7 
+93333 Neustadt an der Donau 
+Deutschland";DE 93333;DE 80995;11.709476, 48.763547;11.477112, 48.218301;1;10,5;10,5;21;https://maps.app.goo.gl/8qLMAiGhAFAHnAk8A
+Nyrany -> München Werk;"Pod Kyjovem 18
+32200 Plzeň - Radčice 
+Tschechische Republik";CZ 322 00;DE 80995;13.318127989768984, 49.766006885387156;11.477112, 48.218301;2;6;6;12;https://maps.app.goo.gl/G4iz7VA8yHv6cTX67
+Redwitz / Unterlangenstadt -> München Werk;"Dorfstraße 74
+96257 Redwitz / Unterlangenstadt
+Deutschland";DE 96257;DE 80995;11.233853101730347, 50.1784200142913;11.477112, 48.218301;1;2;2;4;https://maps.app.goo.gl/9QZioDu6VRCsRuQv6
+St. Aegyd A.N.-> München Werk;"Eisenwerk 14
+3193 St. Aegyd A.N.
+Österreich";AT 3193;DE 80995;15.58067321777344, 47.85994221398225;11.477112, 48.218301;1;5,5;5,5;11;https://maps.app.goo.gl/mHbn7GTKSLDwWyV36
+Starachowice -> München Werk;"ul. Skladowa 33  
+27-200 Starachowice
+Polen";PL 27200;DE 80995;21.07138305902481, 51.07032287012852;11.477112, 48.218301;1;10,5;10,5;21;https://maps.app.goo.gl/TLAXPL52Qiv9kNhs5
+Steyr -> München Werk;"Schönauerstraße 5
+4400 Steyr
+Österreich";AT 4400;DE 80995;14.427454, 48.039185;11.477112, 48.218301;2;35;35;70;https://maps.app.goo.gl/i5BSybpb6NnTBCoJ9
+Straubing -> München Werk;"Stettiner Str. 7
+94315 Straubing
+Deutschland";DE 94315;DE 80995;12.614424, 48.88921;11.477112, 48.218301;1;10,5;10,5;21;https://maps.app.goo.gl/9W6hCDaY59EHk8Po8
+Skarbimierz -> München Werk;"ul. Motorzycacyjna 1 
+49-318 SKARBIMIERZ
+Polen";PL 49-318;DE 80995;17.424667775630954, 50.83476996821046;11.477112, 48.218301;1;21;21;42;https://maps.app.goo.gl/16CXn3in8LgvoAyh6
+Nürnberg -> München Werk;"Vogelweiherstraße 33 
+90441 Nürnberg
+Deutschland";DE 90402;DE 80995;11.072628, 49.425104;11.477112, 48.218301;1;1,5;1,5;3;https://maps.app.goo.gl/C5St1xbuoYJ9y7ATA
+Września -> München Werk;"ul. Działkowców 12
+62-300 Września
+Polen";PL 62300;DE 80995;17.54873335361481, 52.32382570067544;11.477112, 48.218301;1;73,5;73,5;147;https://maps.app.goo.gl/YX24Ra3vJnhD3An78
+Bruckmühl -> Niepolomice;"Heimatweg 84
+83052 Bruckmühl
+Deutschland";DE 83052;PL 32-005;11.953715085983278, 47.87133432631062;"50.0333; 	20.2167";2;87,5;87,5;175;https://maps.app.goo.gl/sbnkuQAZGMSHyMhx9
+Ergersheim -> Niepolomice;"Buchheimer Str. 4
+91465 Ergersheim
+Deutschland";DE 91465;PL 32-005;10.325303077697756, 49.50718507184477;"50.0333; 	20.2167";1;10,5;10,5;21;https://maps.app.goo.gl/RpQQybmxkPBfcJem7
+Ginsheim-Gustavsburg -> Niepolomice;"Ginsheimer Straße 2  
+65462 Ginsheim-Gustavsburg  
+Deutschland";DE 65462;PL 32-005;8.325206637382509, 49.99184627801866;"50.0333; 	20.2167";1;8;8;16;https://maps.app.goo.gl/MqWGurWvdqWsVfsz6
+Hannover -> Niepolomice;"Am Leineufer 51
+30419 Hannover
+Deutschland";DE 30159;PL 32-005;9.633076, 52.416928;"50.0333; 	20.2167";1;10,5;7;17,5;https://maps.app.goo.gl/2EbtSHeWyndnZXg6A
+Kraichtal- Gochsheim -> Niepolomice;"Alte Münzesheimerstr. 4
+76703 Kraichtal- Gochsheim
+Deutschland";DE 76703;PL 32-005;8.742357194423677, 49.1091986739026;"50.0333; 	20.2167";1;10,5;10,5;21;https://maps.app.goo.gl/jqXxXyxjXmajZNJPA
+München Werk -> Niepolomice;"Dachauer Straße 667
+80995 München
+Deutschland";DE 80995;PL 32-005;11.477112, 48.218301;"50.0333; 	20.2167";2;192,5;52,5;245;https://maps.app.goo.gl/Enk9NWcEeBGjcCQC7
+Neustadt an der Donau -> Niepolomice;"Umbertshausener Weg 7 
+93333 Neustadt an der Donau 
+Deutschland";DE 93333;PL 32-005;11.709476, 48.763547;"50.0333; 	20.2167";1;10;10;20;https://maps.app.goo.gl/zo56vfTj8LGjrsQe9
+Rosenheim -> Niepolomice;"Simsseestraße 15 
+83022 Rosenheim
+Deutschland";DE 83022;PL 32-005;12.142148, 47.852512;"50.0333; 	20.2167";2;66,5;66,5;133;https://maps.app.goo.gl/z1F9VxVYzN46AxBQ6
+Salzgitter -> Niepolomice;"Heinrich-Büssing-Straße 1
+38239 Salzgitter
+Deutschland";DE 38239;PL 32-005;10.424654, 52.145802;"50.0333; 	20.2167";1;35;35;70;https://maps.app.goo.gl/GafZYwxfQXFZFi8p8
+Santhià -> Niepolomice;"Via Guido Rossa 1
+13048 Santhià VC 
+Italien";IT 13048;PL 32-005;8.182408, 45.368216;"50.0333; 	20.2167";2;19,5;19,5;39;https://maps.app.goo.gl/W3BPcDhqFnvKJP9f9
+Schrobenhausen -> Niepolomice;"Lauterbacher Weg 2a 
+86529 Schrobenhausen
+Deutschland";DE 86529;PL 32-005;11.290182, 48.563283;"50.0333; 	20.2167";1;8,5;2,5;11;https://maps.app.goo.gl/KZcgh56X7Yjk6LEM8
+Steyr -> Niepolomice;"Schönauerstraße 5
+4400 Steyr
+Österreich";AT 4400;PL 32-005;14.427454, 48.039185;"50.0333; 	20.2167";1;73,5;73,5;147;https://maps.app.goo.gl/nDfq3C9qFijNsUxg7
+Sulzemoos -> Niepolomice;"Maffeistraße 8
+85254 Sulzemoos
+Deutschland";DE 85254;PL 32-005;11.259164, 48.281499;"50.0333; 	20.2167";3;63;63;126;https://maps.app.goo.gl/qzrXrf1VdX7veDA8A
+Arnstadt -> Nürnberg;"Robert-Bosch-Straße 1
+99310 Arnstadt
+Deutschland";DE 99310;DE 90441;10.948379, 50.86158;11.072628, 49.425104;1;35;10,5;45,5;https://maps.app.goo.gl/UjnPzQhkkgxhf2B6A
+München Werk ->Salzgitter;"Dachauer Straße 667
+80995 München
+Deutschland";DE 80995;DE 38239;11.477112, 48.218301;10.424654, 52.145802;1;5;5;10;https://maps.app.goo.gl/ZbrTbWcy7TscMmrk9
+Steyr -> Salzgitter;"Schönauerstraße 5
+4400 Steyr
+Österreich";AT 4400;DE 38239;14.427454, 48.039185;10.424654, 52.145802;1;14;14;28;https://maps.app.goo.gl/ZVHL4rgXBV6ZGfB3A
