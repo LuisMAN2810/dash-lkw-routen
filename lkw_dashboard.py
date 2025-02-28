@@ -22,13 +22,13 @@ df = df.dropna(subset=["Transporte pro Woche", "Koordinaten Start", "Koordinaten
 def clean_coordinates(coord_string):
     try:
         if isinstance(coord_string, str):
-            coord_string = re.sub(r'[^0-9.,;\s]', '', coord_string)  # Entferne unerwartete Zeichen
-            coord_string = coord_string.replace("\t", "").replace(",", ".").replace(";", ",").strip()
+            coord_string = re.sub(r'[^0-9.,\s]', '', coord_string)  # Entferne unerwartete Zeichen
+            coord_string = coord_string.replace("\t", "").replace(",", ".").strip()
             parts = coord_string.split()
             if len(parts) == 1:
-                parts = coord_string.split(",")
+                parts = coord_string.split(" ")
             if len(parts) == 2:
-                lat, lon = map(float, parts)
+                lon, lat = map(float, parts)  # Längengrad zuerst, dann Breitengrad
                 return [lon, lat]
     except Exception as e:
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
@@ -119,25 +119,20 @@ def update_map(selected_routes):
         selected_routes = df['Route'].tolist()
 
     m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
-    transport_count = defaultdict(int)
-
+    
     for _, row in df.iterrows():
         if row['Route'] in selected_routes:
             start_coords = row["Koordinaten Start"]
             end_coords = row["Koordinaten Ziel"]
             transporte = row["Transporte pro Woche"]
-            google_maps_link = row["Routen Google Maps"]
 
             route_geometry = get_lkw_route(start_coords, end_coords)
             if route_geometry:
-                for coord in route_geometry:
-                    transport_count[tuple(coord)] += transporte
-                
                 folium.PolyLine(
                     route_geometry, 
-                    color=get_route_color(transport_count[tuple(route_geometry[0])]), 
+                    color=get_route_color(transporte), 
                     weight=5, 
-                    tooltip=f"Transporte: {transport_count[tuple(route_geometry[0])]}"
+                    tooltip=f"Transporte: {transporte}"
                 ).add_to(m)
     
     add_legend(m)
