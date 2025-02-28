@@ -113,6 +113,7 @@ def update_map(selected_routes):
         selected_routes = df['Route'].tolist()
 
     m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
+    transport_count = defaultdict(int)
 
     for _, row in df.iterrows():
         if row['Route'] in selected_routes:
@@ -123,6 +124,9 @@ def update_map(selected_routes):
 
             route_geometry = get_lkw_route(start_coords, end_coords)
             if route_geometry:
+                for coord in route_geometry:
+                    transport_count[tuple(coord)] += transporte
+                
                 folium.PolyLine(
                     route_geometry, 
                     color=get_route_color(transporte), 
