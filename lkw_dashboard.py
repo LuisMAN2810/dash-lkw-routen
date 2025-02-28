@@ -8,18 +8,16 @@ import json
 import polyline
 from collections import defaultdict
 
-# GraphHopper API-Key
-GRAPHHOPPER_API_KEY = "045abf50-4e22-453a-b0a9-8374930f4e47"
+# OpenRouteService API-Key
+ORS_API_KEY = "5b3ce3597851110001cf6248f42ededae9b5414fb25591adaff63db4"
 
 # CSV-Datei einlesen
 file_path = "Datenblatt Routenanalyse .csv"
 df = pd.read_csv(file_path, delimiter=";", encoding="utf-8")
 
-# Spalten bereinigen
 df["Transporte pro Woche"] = pd.to_numeric(df["Transporte pro Woche"], errors='coerce')
 df = df.dropna(subset=["Transporte pro Woche", "Koordinaten Start", "Koordinaten Ziel", "Routen Google Maps"])
 
-# Funktion zur Bereinigung der Koordinaten
 def clean_coordinates(coord_string):
     try:
         if isinstance(coord_string, str):
@@ -34,7 +32,6 @@ df["Koordinaten Start"] = df["Koordinaten Start"].apply(clean_coordinates)
 df["Koordinaten Ziel"] = df["Koordinaten Ziel"].apply(clean_coordinates)
 df.dropna(subset=["Koordinaten Start", "Koordinaten Ziel"], inplace=True)
 
-# Dash-App initialisieren
 app = dash.Dash(__name__)
 
 route_options = [{'label': 'Alle anzeigen', 'value': 'all'}] + [
@@ -52,30 +49,27 @@ app.layout = html.Div([
     html.Iframe(id="map", width="100%", height="600")
 ])
 
-# API-Abfrage
 def get_lkw_route(start_coords, end_coords):
-    url = "https://graphhopper.com/api/1/route"
-    params = {
-        "key": GRAPHHOPPER_API_KEY,
-        "point": [f"{start_coords[1]},{start_coords[0]}", f"{end_coords[1]},{end_coords[0]}"],
-        "profile": "truck",
-        "locale": "de",
-        "calc_points": True,
-        "instructions": False,
-        "geometry": True
+    url = "https://api.openrouteservice.org/v2/directions/driving-hgv"
+    headers = {
+        "Authorization": ORS_API_KEY,
+        "Content-Type": "application/json"
+    }
+    data = {
+        "coordinates": [start_coords, end_coords],
+        "format": "json"
     }
     try:
-        response = requests.get(url, params=params)
+        response = requests.post(url, headers=headers, json=data)
         if response.status_code == 200:
             data = response.json()
-            return polyline.decode(data["paths"][0]["points"])
+            return polyline.decode(data["routes"][0]["geometry"])
         else:
             print(f"⚠️ API-Fehler: {response.text}")
     except Exception as e:
         print(f"⚠️ API-Verbindungsfehler: {e}")
     return None
 
-# Farben nach Transportmenge
 def get_route_color(transporte):
     if transporte <= 10:
         return "green"
@@ -85,7 +79,6 @@ def get_route_color(transporte):
         return "orange"
     return "red"
 
-# Verbesserte Legende hinzufügen
 def add_legend(m):
     legend_html = '''
      <div style="position: fixed; bottom: 50px; left: 50px; width: 220px; padding: 15px; background-color: white; 
@@ -134,31 +127,25 @@ def update_map(selected_routes):
                     route_geometry, 
                     color=get_route_color(transporte), 
                     weight=5, 
-                    tooltip=folium.Tooltip(f"Transporte: {transporte}")
+                    tooltip=f"Transporte: {transporte}"
                 ).add_to(m)
-
+                
                 folium.Marker(
-                    location=[start_coords[1], start_coords[0]],
+                    location=start_coords,
                     popup=folium.Popup(f"<b>Start</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
                     icon=folium.Icon(color="blue")
                 ).add_to(m)
-
+                
                 folium.Marker(
-                    location=[end_coords[1], end_coords[0]],
+                    location=end_coords,
                     popup=folium.Popup(f"<b>Ziel</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
                     icon=folium.Icon(color="red")
                 ).add_to(m)
-
-    # Verbesserte Legende hinzufügen
+    
     add_legend(m)
-
-    try:
-        map_path = "map.html"
-        m.save(map_path)
-        return open(map_path, "r", encoding="utf-8").read()
-    except Exception as e:
-        print(f"❌ Fehler beim Speichern der Karte: {e}")
-        return ""
+    map_path = "map.html"
+    m.save(map_path)
+    return open(map_path, "r", encoding="utf-8").read()
 
 if __name__ == '__main__':
     app.run_server(debug=True)
