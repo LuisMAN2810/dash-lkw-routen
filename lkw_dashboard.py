@@ -23,10 +23,9 @@ def clean_coordinates(coord_string):
     try:
         if isinstance(coord_string, str):
             coord_string = re.sub(r'[^0-9.,\s]', '', coord_string)  # Entferne unerwartete Zeichen
-            coord_string = coord_string.replace("\t", "").replace(",", ".").strip()
-            parts = coord_string.split()
-            if len(parts) == 1:
-                parts = coord_string.split(" ")
+            coord_string = coord_string.replace("\t", "").replace(" ", "").strip()
+            coord_string = re.sub(r'\.\.', '.', coord_string)  # Doppelte Punkte entfernen
+            parts = coord_string.split(",")
             if len(parts) == 2:
                 lon, lat = map(float, parts)  # Längengrad zuerst, dann Breitengrad
                 return [lon, lat]
@@ -125,6 +124,7 @@ def update_map(selected_routes):
             start_coords = row["Koordinaten Start"]
             end_coords = row["Koordinaten Ziel"]
             transporte = row["Transporte pro Woche"]
+            google_maps_link = row["Routen Google Maps"]
 
             route_geometry = get_lkw_route(start_coords, end_coords)
             if route_geometry:
@@ -134,7 +134,19 @@ def update_map(selected_routes):
                     weight=5, 
                     tooltip=f"Transporte: {transporte}"
                 ).add_to(m)
-    
+
+                folium.Marker(
+                    location=start_coords,
+                    popup=folium.Popup(f"<b>Start</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
+                    icon=folium.Icon(color="blue")
+                ).add_to(m)
+
+                folium.Marker(
+                    location=end_coords,
+                    popup=folium.Popup(f"<b>Ziel</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
+                    icon=folium.Icon(color="red")
+                ).add_to(m)
+
     add_legend(m)
     map_path = "map.html"
     m.save(map_path)
