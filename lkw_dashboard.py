@@ -134,19 +134,17 @@ def update_map(selected_routes):
                     weight=5, 
                     tooltip=f"Transporte: {transporte}"
                 ).add_to(m)
-
                 folium.Marker(
                     location=start_coords,
                     popup=folium.Popup(f"<b>Start</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
                     icon=folium.Icon(color="blue")
                 ).add_to(m)
-
                 folium.Marker(
                     location=end_coords,
                     popup=folium.Popup(f"<b>Ziel</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
                     icon=folium.Icon(color="red")
                 ).add_to(m)
-
+    
     add_legend(m)
     map_path = "map.html"
     m.save(map_path)
