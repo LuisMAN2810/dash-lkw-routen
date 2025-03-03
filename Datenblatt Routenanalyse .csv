@@ -4,7 +4,7 @@ München Werk -> AS Salzgitter;"Dachauer Straße 667
 Deutschland";DE 80995;DE 38239;11.477112, 48.218301;10.424654, 52.145802;1;5;5;10;https://maps.app.goo.gl/tgd6st99aTHangMj8
 München Werk -> Brauenschweig;"Dachauer Straße 667
 80995 München
-Deutschland";DE 80995;DE 38102;11.477112, 48.218301;"52.2667; 10.5333";2;33;5;38;https://maps.app.goo.gl/s4sdE4rASbV2SNLc9
+Deutschland";DE 80995;DE 38102;11.477112, 48.218301;10.526247, 52.264833;2;33;5;38;https://maps.app.goo.gl/s4sdE4rASbV2SNLc9
 Bad Rodach -> München Werk;"Werner-von-Siemens-Straße 6
 96476 Bad Rodach
 Deutschland";DE 96476;DE 80995;10.787276, 50.336515;11.477112, 48.218301;1;10,5;10,5;21;https://maps.app.goo.gl/UbtkX2jtsV2x55259
@@ -52,43 +52,43 @@ Września -> München Werk;"ul. Działkowców 12
 Polen";PL 62300;DE 80995;17.54873335361481, 52.32382570067544;11.477112, 48.218301;1;73,5;73,5;147;https://maps.app.goo.gl/YX24Ra3vJnhD3An78
 Bruckmühl -> Niepolomice;"Heimatweg 84
 83052 Bruckmühl
-Deutschland";DE 83052;PL 32-005;11.953715085983278, 47.87133432631062;"50.0333; 	20.2167";2;87,5;87,5;175;https://maps.app.goo.gl/sbnkuQAZGMSHyMhx9
+Deutschland";DE 83052;PL 32-005;11.953715085983278, 47.87133432631062;20.175525, 50.027853;2;87,5;87,5;175;https://maps.app.goo.gl/sbnkuQAZGMSHyMhx9
 Ergersheim -> Niepolomice;"Buchheimer Str. 4
 91465 Ergersheim
-Deutschland";DE 91465;PL 32-005;10.325303077697756, 49.50718507184477;"50.0333; 	20.2167";1;10,5;10,5;21;https://maps.app.goo.gl/RpQQybmxkPBfcJem7
+Deutschland";DE 91465;PL 32-005;10.325303077697756, 49.50718507184477;20.175525, 50.027853;1;10,5;10,5;21;https://maps.app.goo.gl/RpQQybmxkPBfcJem7
 Ginsheim-Gustavsburg -> Niepolomice;"Ginsheimer Straße 2  
 65462 Ginsheim-Gustavsburg  
-Deutschland";DE 65462;PL 32-005;8.325206637382509, 49.99184627801866;"50.0333; 	20.2167";1;8;8;16;https://maps.app.goo.gl/MqWGurWvdqWsVfsz6
+Deutschland";DE 65462;PL 32-005;8.325206637382509, 49.99184627801866;20.175525, 50.027853;1;8;8;16;https://maps.app.goo.gl/MqWGurWvdqWsVfsz6
 Hannover -> Niepolomice;"Am Leineufer 51
 30419 Hannover
-Deutschland";DE 30159;PL 32-005;9.633076, 52.416928;"50.0333; 	20.2167";1;10,5;7;17,5;https://maps.app.goo.gl/2EbtSHeWyndnZXg6A
+Deutschland";DE 30159;PL 32-005;9.633076, 52.416928;20.175525, 50.027853;1;10,5;7;17,5;https://maps.app.goo.gl/2EbtSHeWyndnZXg6A
 Kraichtal- Gochsheim -> Niepolomice;"Alte Münzesheimerstr. 4
 76703 Kraichtal- Gochsheim
-Deutschland";DE 76703;PL 32-005;8.742357194423677, 49.1091986739026;"50.0333; 	20.2167";1;10,5;10,5;21;https://maps.app.goo.gl/jqXxXyxjXmajZNJPA
+Deutschland";DE 76703;PL 32-005;8.742357194423677, 49.1091986739026;20.175525, 50.027853;1;10,5;10,5;21;https://maps.app.goo.gl/jqXxXyxjXmajZNJPA
 München Werk -> Niepolomice;"Dachauer Straße 667
 80995 München
-Deutschland";DE 80995;PL 32-005;11.477112, 48.218301;"50.0333; 	20.2167";2;192,5;52,5;245;https://maps.app.goo.gl/Enk9NWcEeBGjcCQC7
+Deutschland";DE 80995;PL 32-005;11.477112, 48.218301;20.175525, 50.027853;2;192,5;52,5;245;https://maps.app.goo.gl/Enk9NWcEeBGjcCQC7
 Neustadt an der Donau -> Niepolomice;"Umbertshausener Weg 7 
 93333 Neustadt an der Donau 
-Deutschland";DE 93333;PL 32-005;11.709476, 48.763547;"50.0333; 	20.2167";1;10;10;20;https://maps.app.goo.gl/zo56vfTj8LGjrsQe9
+Deutschland";DE 93333;PL 32-005;11.709476, 48.763547;20.175525, 50.027853;1;10;10;20;https://maps.app.goo.gl/zo56vfTj8LGjrsQe9
 Rosenheim -> Niepolomice;"Simsseestraße 15 
 83022 Rosenheim
-Deutschland";DE 83022;PL 32-005;12.142148, 47.852512;"50.0333; 	20.2167";2;66,5;66,5;133;https://maps.app.goo.gl/z1F9VxVYzN46AxBQ6
+Deutschland";DE 83022;PL 32-005;12.142148, 47.852512;20.175525, 50.027853;2;66,5;66,5;133;https://maps.app.goo.gl/z1F9VxVYzN46AxBQ6
 Salzgitter -> Niepolomice;"Heinrich-Büssing-Straße 1
 38239 Salzgitter
-Deutschland";DE 38239;PL 32-005;10.424654, 52.145802;"50.0333; 	20.2167";1;35;35;70;https://maps.app.goo.gl/GafZYwxfQXFZFi8p8
+Deutschland";DE 38239;PL 32-005;10.424654, 52.145802;20.175525, 50.027853;1;35;35;70;https://maps.app.goo.gl/GafZYwxfQXFZFi8p8
 Santhià -> Niepolomice;"Via Guido Rossa 1
 13048 Santhià VC 
-Italien";IT 13048;PL 32-005;8.182408, 45.368216;"50.0333; 	20.2167";2;19,5;19,5;39;https://maps.app.goo.gl/W3BPcDhqFnvKJP9f9
+Italien";IT 13048;PL 32-005;8.182408, 45.368216;20.175525, 50.027853;2;19,5;19,5;39;https://maps.app.goo.gl/W3BPcDhqFnvKJP9f9
 Schrobenhausen -> Niepolomice;"Lauterbacher Weg 2a 
 86529 Schrobenhausen
-Deutschland";DE 86529;PL 32-005;11.290182, 48.563283;"50.0333; 	20.2167";1;8,5;2,5;11;https://maps.app.goo.gl/KZcgh56X7Yjk6LEM8
+Deutschland";DE 86529;PL 32-005;11.290182, 48.563283;20.175525, 50.027853;1;8,5;2,5;11;https://maps.app.goo.gl/KZcgh56X7Yjk6LEM8
 Steyr -> Niepolomice;"Schönauerstraße 5
 4400 Steyr
-Österreich";AT 4400;PL 32-005;14.427454, 48.039185;"50.0333; 	20.2167";1;73,5;73,5;147;https://maps.app.goo.gl/nDfq3C9qFijNsUxg7
+Österreich";AT 4400;PL 32-005;14.427454, 48.039185;20.175525, 50.027853;1;73,5;73,5;147;https://maps.app.goo.gl/nDfq3C9qFijNsUxg7
 Sulzemoos -> Niepolomice;"Maffeistraße 8
 85254 Sulzemoos
-Deutschland";DE 85254;PL 32-005;11.259164, 48.281499;"50.0333; 	20.2167";3;63;63;126;https://maps.app.goo.gl/qzrXrf1VdX7veDA8A
+Deutschland";DE 85254;PL 32-005;11.259164, 48.281499;20.175525, 50.027853;3;63;63;126;https://maps.app.goo.gl/qzrXrf1VdX7veDA8A
 Arnstadt -> Nürnberg;"Robert-Bosch-Straße 1
 99310 Arnstadt
 Deutschland";DE 99310;DE 90441;10.948379, 50.86158;11.072628, 49.425104;1;35;10,5;45,5;https://maps.app.goo.gl/UjnPzQhkkgxhf2B6A
