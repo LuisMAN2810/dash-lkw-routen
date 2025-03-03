@@ -25,10 +25,11 @@ def clean_coordinates(coord_string):
             coord_string = re.sub(r'[^0-9.,\s]', '', coord_string)  # Entferne unerwartete Zeichen
             coord_string = coord_string.replace("\t", "").replace(" ", "").strip()
             coord_string = re.sub(r'\.\.', '.', coord_string)  # Doppelte Punkte entfernen
+            coord_string = coord_string.replace(";", ",")  # Ersetze Semikolon durch Komma
             parts = coord_string.split(",")
             if len(parts) == 2:
                 lon, lat = map(float, parts)  # Längengrad zuerst, dann Breitengrad
-                return [lon, lat]
+                return [lat, lon]
     except Exception as e:
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
     return None
