@@ -28,7 +28,7 @@ def clean_coordinates(coord_string):
             coord_string = coord_string.replace(";", ",")
             parts = coord_string.split(",")
             if len(parts) == 2:
-                lon, lat = map(float, parts)  # Korrektur: Erst Längengrad, dann Breitengrad
+                lon, lat = map(float, parts)  # Erst Längengrad, dann Breitengrad
                 return [lon, lat]
     except Exception as e:
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
@@ -118,7 +118,7 @@ def update_map(selected_routes):
     if not selected_routes or 'all' in selected_routes:
         selected_routes = df['Route'].tolist()
 
-    m = folium.Map(location=[10.4515, 51.1657] zoom_start=6)
+    m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
     
     for _, row in df.iterrows():
         if row['Route'] in selected_routes:
