@@ -22,14 +22,14 @@ df = df.dropna(subset=["Transporte pro Woche", "Koordinaten Start", "Koordinaten
 def clean_coordinates(coord_string):
     try:
         if isinstance(coord_string, str):
-            coord_string = re.sub(r'[^0-9.,\s]', '', coord_string)  # Entferne unerwartete Zeichen
+            coord_string = re.sub(r'[^0-9.,\s]', '', coord_string)
             coord_string = coord_string.replace("\t", "").replace(" ", "").strip()
-            coord_string = re.sub(r'\.\.', '.', coord_string)  # Doppelte Punkte entfernen
-            coord_string = coord_string.replace(";", ",")  # Ersetze Semikolon durch Komma
+            coord_string = re.sub(r'\.\.', '.', coord_string)
+            coord_string = coord_string.replace(";", ",")
             parts = coord_string.split(",")
             if len(parts) == 2:
-                lon, lat = map(float, parts)  # Längengrad zuerst, dann Breitengrad
-                return [lat, lon]
+                lon, lat = map(float, parts)  # Korrektur: Erst Längengrad, dann Breitengrad
+                return [lon, lat]
     except Exception as e:
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
     return None
@@ -118,7 +118,7 @@ def update_map(selected_routes):
     if not selected_routes or 'all' in selected_routes:
         selected_routes = df['Route'].tolist()
 
-    m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
+    m = folium.Map(location=[10.4515, 51.1657] zoom_start=6)
     
     for _, row in df.iterrows():
         if row['Route'] in selected_routes:
@@ -137,12 +137,12 @@ def update_map(selected_routes):
                 ).add_to(m)
                 folium.Marker(
                     location=start_coords,
-                    popup=folium.Popup(f"<b>Start</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
+                    popup=f"Startpunkt: <a href='{google_maps_link}' target='_blank'>Google Maps</a>",
                     icon=folium.Icon(color="blue")
                 ).add_to(m)
                 folium.Marker(
                     location=end_coords,
-                    popup=folium.Popup(f"<b>Ziel</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
+                    popup=f"Zielpunkt: <a href='{google_maps_link}' target='_blank'>Google Maps</a>",
                     icon=folium.Icon(color="red")
                 ).add_to(m)
     
