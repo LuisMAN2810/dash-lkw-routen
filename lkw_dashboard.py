@@ -22,14 +22,14 @@ df = df.dropna(subset=["Transporte pro Woche", "Koordinaten Start", "Koordinaten
 def clean_coordinates(coord_string):
     try:
         if isinstance(coord_string, str):
-            coord_string = re.sub(r'[^0-9.,\s]', '', coord_string)
+            coord_string = re.sub(r'[^0-9.,\s-]', '', coord_string)
             coord_string = coord_string.replace("\t", "").replace(" ", "").strip()
             coord_string = re.sub(r'\.\.', '.', coord_string)
             coord_string = coord_string.replace(";", ",")
             parts = coord_string.split(",")
             if len(parts) == 2:
-                lon, lat = map(float, parts)  # Erst Längengrad, dann Breitengrad
-                return [lon, lat]
+                lat, lon = map(float, parts)  # Erst Breitengrad, dann Längengrad
+                return [lat, lon]
     except Exception as e:
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
     return None
@@ -62,7 +62,7 @@ def get_lkw_route(start_coords, end_coords):
         "Content-Type": "application/json"
     }
     data = {
-        "coordinates": [start_coords, end_coords],
+        "coordinates": [start_coords[::-1], end_coords[::-1]],  # Korrigierte Reihenfolge
         "format": "json"
     }
     try:
@@ -136,12 +136,12 @@ def update_map(selected_routes):
                     tooltip=f"Transporte: {transporte}"
                 ).add_to(m)
                 folium.Marker(
-                    location=start_coords,
+                    location=start_coords[::-1],
                     popup=f"Startpunkt: <a href='{google_maps_link}' target='_blank'>Google Maps</a>",
                     icon=folium.Icon(color="blue")
                 ).add_to(m)
                 folium.Marker(
-                    location=end_coords,
+                    location=end_coords[::-1],
                     popup=f"Zielpunkt: <a href='{google_maps_link}' target='_blank'>Google Maps</a>",
                     icon=folium.Icon(color="red")
                 ).add_to(m)
