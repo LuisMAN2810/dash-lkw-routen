@@ -28,8 +28,8 @@ def clean_coordinates(coord_string):
             coord_string = coord_string.replace(";", ",")
             parts = coord_string.split(",")
             if len(parts) == 2:
-                lon, lat = map(float, parts)  # Längengrad, dann Breitengrad für korrekte Darstellung
-                return [lat, lon]  # Anpassung für Folium
+                lon, lat = map(float, parts)  # Längengrad, dann Breitengrad
+                return [lat, lon]  # Anpassung für Folium (Breitengrad zuerst)
     except Exception as e:
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
     return None
@@ -98,24 +98,22 @@ def update_map(selected_routes):
             transporte = row["Transporte pro Woche"]
             google_maps_link = row["Routen Google Maps"]
 
-            route_geometry = get_lkw_route(start_coords, end_coords)
-            if route_geometry:
-                folium.PolyLine(
-                    route_geometry, 
-                    color="blue", 
-                    weight=5, 
-                    tooltip=f"{row['Route']} - Transporte: {transporte} pro Woche"
-                ).add_to(m)
-                folium.Marker(
-                    location=start_coords,
-                    popup=f"Startpunkt: <a href='{google_maps_link}' target='_blank'>Google Maps</a>",
-                    icon=folium.Icon(color="blue")
-                ).add_to(m)
-                folium.Marker(
-                    location=end_coords,
-                    popup=f"Zielpunkt: <a href='{google_maps_link}' target='_blank'>Google Maps</a>",
-                    icon=folium.Icon(color="red")
-                ).add_to(m)
+            folium.PolyLine(
+                [start_coords, end_coords],
+                color="blue", 
+                weight=5, 
+                tooltip=f"{row['Route']} - Transporte: {transporte} pro Woche"
+            ).add_to(m)
+            folium.Marker(
+                location=start_coords,
+                popup=f"Startpunkt: <a href='{google_maps_link}' target='_blank'>Google Maps</a>",
+                icon=folium.Icon(color="blue")
+            ).add_to(m)
+            folium.Marker(
+                location=end_coords,
+                popup=f"Zielpunkt: <a href='{google_maps_link}' target='_blank'>Google Maps</a>",
+                icon=folium.Icon(color="red")
+            ).add_to(m)
     
     add_legend(m)
     map_path = "map.html"
