@@ -13,7 +13,7 @@ import re
 ORS_API_KEY = "5b3ce3597851110001cf6248f42ededae9b5414fb25591adaff63db4"
 
 # CSV-Datei einlesen
-file_path = "Datenblatt Routenanalyse .csv"
+file_path = "/mnt/data/Datenblatt Routenanalyse .csv"
 df = pd.read_csv(file_path, delimiter=";", encoding="utf-8-sig")
 
 df["Transporte pro Woche"] = pd.to_numeric(df["Transporte pro Woche"], errors='coerce')
@@ -28,8 +28,8 @@ def clean_coordinates(coord_string):
             coord_string = coord_string.replace(";", ",")
             parts = coord_string.split(",")
             if len(parts) == 2:
-                lon, lat = map(float, parts)  # Längengrad, dann Breitengrad für Routing beibehalten
-                return [lon, lat]  # Beibehalten für API-Anfragen
+                lon, lat = map(float, parts)  # Längengrad, dann Breitengrad für korrekte Darstellung
+                return [lon, lat]  # Beibehalten der Reihenfolge
     except Exception as e:
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
     return None
@@ -62,7 +62,7 @@ def get_lkw_route(start_coords, end_coords):
         "Content-Type": "application/json"
     }
     data = {
-        "coordinates": [start_coords, end_coords],  # Beibehalten: Längengrad, dann Breitengrad für API
+        "coordinates": [start_coords, end_coords],  # Beibehaltung der Reihenfolge Längengrad, dann Breitengrad
         "format": "json"
     }
     try:
@@ -118,7 +118,7 @@ def update_map(selected_routes):
     if not selected_routes or 'all' in selected_routes:
         selected_routes = df['Route'].tolist()
 
-    m = folium.Map(location=[10.4515, 51.1657], zoom_start=6)  # Korrektur: Erst Längengrad, dann Breitengrad
+    m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)  # Deutschland als Mittelpunkt
     
     for _, row in df.iterrows():
         if row['Route'] in selected_routes:
@@ -134,16 +134,6 @@ def update_map(selected_routes):
                     color=get_route_color(transporte), 
                     weight=5, 
                     tooltip=f"Transporte: {transporte}"
-                ).add_to(m)
-                folium.Marker(
-                    location=start_coords,
-                    popup=f"Startpunkt: <a href='{google_maps_link}' target='_blank'>Google Maps</a>",
-                    icon=folium.Icon(color="blue")
-                ).add_to(m)
-                folium.Marker(
-                    location=end_coords,
-                    popup=f"Zielpunkt: <a href='{google_maps_link}' target='_blank'>Google Maps</a>",
-                    icon=folium.Icon(color="red")
                 ).add_to(m)
     
     add_legend(m)
