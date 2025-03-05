@@ -13,7 +13,7 @@ import re
 ORS_API_KEY = "5b3ce3597851110001cf6248f42ededae9b5414fb25591adaff63db4"
 
 # CSV-Datei einlesen
-file_path = "/mnt/data/Datenblatt Routenanalyse .csv"
+file_path = "Datenblatt Routenanalyse .csv"
 df = pd.read_csv(file_path, delimiter=";", encoding="utf-8-sig")
 
 df["Transporte pro Woche"] = pd.to_numeric(df["Transporte pro Woche"], errors='coerce')
