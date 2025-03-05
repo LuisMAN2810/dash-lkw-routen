@@ -44,6 +44,36 @@ route_options = [{'label': 'Alle anzeigen', 'value': 'all'}] + [
     {'label': row['Route'], 'value': row['Route']} for _, row in df.iterrows()
 ]
 
+def get_lkw_route(start_coords, end_coords):
+    url = "https://api.openrouteservice.org/v2/directions/driving-hgv"
+    headers = {
+        "Authorization": ORS_API_KEY,
+        "Content-Type": "application/json"
+    }
+    data = {
+        "coordinates": [start_coords, end_coords],
+        "format": "json"
+    }
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        if response.status_code == 200:
+            data = response.json()
+            return polyline.decode(data["routes"][0]["geometry"])
+        else:
+            print(f"⚠️ API-Fehler: {response.text}")
+    except Exception as e:
+        print(f"⚠️ API-Verbindungsfehler: {e}")
+    return None
+
+def get_route_color(transporte):
+    if transporte <= 10:
+        return "green"
+    elif transporte <= 50:
+        return "yellow"
+    elif transporte <= 100:
+        return "orange"
+    return "red"
+
 app.layout = html.Div([
     html.H1("LKW Routen-Dashboard"),
     dcc.Dropdown(
@@ -96,24 +126,14 @@ def update_map(selected_routes):
             start_coords = row["Koordinaten Start"]
             end_coords = row["Koordinaten Ziel"]
             transporte = row["Transporte pro Woche"]
-            google_maps_link = row["Routen Google Maps"]
-
-            folium.PolyLine(
-                [start_coords, end_coords],
-                color="blue", 
-                weight=5, 
-                tooltip=f"{row['Route']} - Transporte: {transporte} pro Woche"
-            ).add_to(m)
-            folium.Marker(
-                location=start_coords,
-                popup=f"Startpunkt: <a href='{google_maps_link}' target='_blank'>Google Maps</a>",
-                icon=folium.Icon(color="blue")
-            ).add_to(m)
-            folium.Marker(
-                location=end_coords,
-                popup=f"Zielpunkt: <a href='{google_maps_link}' target='_blank'>Google Maps</a>",
-                icon=folium.Icon(color="red")
-            ).add_to(m)
+            route_geometry = get_lkw_route(start_coords, end_coords)
+            if route_geometry:
+                folium.PolyLine(
+                    route_geometry, 
+                    color=get_route_color(transporte), 
+                    weight=5, 
+                    tooltip=f"{row['Route']} - Transporte: {transporte} pro Woche"
+                ).add_to(m)
     
     add_legend(m)
     map_path = "map.html"
