@@ -6,7 +6,7 @@ from dash.dependencies import Input, Output
 import requests
 import json
 import polyline
-from collections import defaultdict
+import os
 import re
 
 # OpenRouteService API-Key
@@ -28,8 +28,8 @@ def clean_coordinates(coord_string):
             coord_string = coord_string.replace(";", ",")
             parts = coord_string.split(",")
             if len(parts) == 2:
-                lon, lat = map(float, parts)  # Längengrad, dann Breitengrad
-                return [lat, lon]  # Anpassung für Folium (Breitengrad zuerst)
+                lon, lat = map(float, parts)  # Längengrad, dann Breitengrad für API
+                return [lon, lat]  # OpenRouteService benötigt diese Reihenfolge
     except Exception as e:
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
     return None
@@ -38,31 +38,38 @@ df["Koordinaten Start"] = df["Koordinaten Start"].apply(clean_coordinates)
 df["Koordinaten Ziel"] = df["Koordinaten Ziel"].apply(clean_coordinates)
 df.dropna(subset=["Koordinaten Start", "Koordinaten Ziel"], inplace=True)
 
-app = dash.Dash(__name__)
+# Caching für Routenberechnung
+route_cache_file = "routes_cache.json"
+if os.path.exists(route_cache_file):
+    with open(route_cache_file, "r", encoding="utf-8") as f:
+        route_cache = json.load(f)
+else:
+    route_cache = {}
 
-route_options = [{'label': 'Alle anzeigen', 'value': 'all'}] + [
-    {'label': row['Route'], 'value': row['Route']} for _, row in df.iterrows()
-]
+def save_routes():
+    with open(route_cache_file, "w", encoding="utf-8") as f:
+        json.dump(route_cache, f, indent=4)
 
-def get_lkw_route(start_coords, end_coords):
+def get_lkw_route(start_coords, end_coords, route_name):
+    if route_name in route_cache:
+        return route_cache[route_name]
+    
     url = "https://api.openrouteservice.org/v2/directions/driving-hgv"
-    headers = {
-        "Authorization": ORS_API_KEY,
-        "Content-Type": "application/json"
-    }
-    data = {
-        "coordinates": [start_coords, end_coords],
-        "format": "json"
-    }
+    headers = {"Authorization": ORS_API_KEY, "Content-Type": "application/json"}
+    data = {"coordinates": [start_coords, end_coords], "format": "json"}
+    
     try:
         response = requests.post(url, headers=headers, json=data)
         if response.status_code == 200:
             data = response.json()
-            return polyline.decode(data["routes"][0]["geometry"])
+            route_geometry = polyline.decode(data["routes"][0]["geometry"])
+            route_cache[route_name] = route_geometry
+            save_routes()
+            return route_geometry
         else:
-            print(f"⚠️ API-Fehler: {response.text}")
+            print(f"⚠️ API-Fehler für {route_name}: {response.text}")
     except Exception as e:
-        print(f"⚠️ API-Verbindungsfehler: {e}")
+        print(f"⚠️ API-Verbindungsfehler für {route_name}: {e}")
     return None
 
 def get_route_color(transporte):
@@ -73,18 +80,6 @@ def get_route_color(transporte):
     elif transporte <= 100:
         return "orange"
     return "red"
-
-app.layout = html.Div([
-    html.H1("LKW Routen-Dashboard"),
-    dcc.Dropdown(
-        id='route-selector',
-        options=route_options,
-        multi=True,
-        value=['all'],
-        placeholder="Wähle eine Route"
-    ),
-    html.Iframe(id="map", width="100%", height="600")
-])
 
 def add_legend(m):
     legend_html = '''
@@ -111,6 +106,8 @@ def add_legend(m):
     '''
     m.get_root().html.add_child(folium.Element(legend_html))
 
+app = dash.Dash(__name__)
+
 @app.callback(
     Output('map', 'srcDoc'),
     [Input('route-selector', 'value')]
@@ -126,7 +123,7 @@ def update_map(selected_routes):
             start_coords = row["Koordinaten Start"]
             end_coords = row["Koordinaten Ziel"]
             transporte = row["Transporte pro Woche"]
-            route_geometry = get_lkw_route(start_coords, end_coords)
+            route_geometry = get_lkw_route(start_coords, end_coords, row['Route'])
             if route_geometry:
                 folium.PolyLine(
                     route_geometry, 
@@ -134,9 +131,6 @@ def update_map(selected_routes):
                     weight=5, 
                     tooltip=f"{row['Route']} - Transporte: {transporte} pro Woche"
                 ).add_to(m)
-            else:
-                print(f"⚠️ Keine Route für {row['Route']} erhalten")
-                
             folium.Marker(
                 location=start_coords,
                 popup=f"Startpunkt", icon=folium.Icon(color="blue")
