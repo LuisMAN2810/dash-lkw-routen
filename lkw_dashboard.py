@@ -134,6 +134,17 @@ def update_map(selected_routes):
                     weight=5, 
                     tooltip=f"{row['Route']} - Transporte: {transporte} pro Woche"
                 ).add_to(m)
+            else:
+                print(f"⚠️ Keine Route für {row['Route']} erhalten")
+                
+            folium.Marker(
+                location=start_coords,
+                popup=f"Startpunkt", icon=folium.Icon(color="blue")
+            ).add_to(m)
+            folium.Marker(
+                location=end_coords,
+                popup=f"Zielpunkt", icon=folium.Icon(color="red")
+            ).add_to(m)
     
     add_legend(m)
     map_path = "map.html"
