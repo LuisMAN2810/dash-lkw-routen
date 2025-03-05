@@ -29,7 +29,7 @@ def clean_coordinates(coord_string):
             parts = coord_string.split(",")
             if len(parts) == 2:
                 lon, lat = map(float, parts)  # Erst Längengrad, dann Breitengrad aus CSV
-                return [lon, lat]
+                return [lat, lon]  # Korrektur: Reihenfolge für Kartenanzeige umkehren
     except Exception as e:
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
     return None
@@ -136,12 +136,12 @@ def update_map(selected_routes):
                     tooltip=f"Transporte: {transporte}"
                 ).add_to(m)
                 folium.Marker(
-                    location=start_coords,
+                    location=[start_coords[1], start_coords[0]],
                     popup=f"Startpunkt: <a href='{google_maps_link}' target='_blank'>Google Maps</a>",
                     icon=folium.Icon(color="blue")
                 ).add_to(m)
                 folium.Marker(
-                    location=end_coords,
+                    location=[end_coords[1], end_coords[0]],
                     popup=f"Zielpunkt: <a href='{google_maps_link}' target='_blank'>Google Maps</a>",
                     icon=folium.Icon(color="red")
                 ).add_to(m)
