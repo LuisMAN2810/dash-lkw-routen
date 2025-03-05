@@ -29,7 +29,7 @@ def clean_coordinates(coord_string):
             parts = coord_string.split(",")
             if len(parts) == 2:
                 lon, lat = map(float, parts)  # Längengrad, dann Breitengrad für korrekte Darstellung
-                return [lon, lat]  # Beibehalten der Reihenfolge
+                return [lat, lon]  # Anpassung für Folium
     except Exception as e:
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
     return None
@@ -50,40 +50,11 @@ app.layout = html.Div([
         id='route-selector',
         options=route_options,
         multi=True,
+        value=['all'],
         placeholder="Wähle eine Route"
     ),
     html.Iframe(id="map", width="100%", height="600")
 ])
-
-def get_lkw_route(start_coords, end_coords):
-    url = "https://api.openrouteservice.org/v2/directions/driving-hgv"
-    headers = {
-        "Authorization": ORS_API_KEY,
-        "Content-Type": "application/json"
-    }
-    data = {
-        "coordinates": [start_coords, end_coords],  # Beibehaltung der Reihenfolge Längengrad, dann Breitengrad
-        "format": "json"
-    }
-    try:
-        response = requests.post(url, headers=headers, json=data)
-        if response.status_code == 200:
-            data = response.json()
-            return polyline.decode(data["routes"][0]["geometry"])
-        else:
-            print(f"⚠️ API-Fehler: {response.text}")
-    except Exception as e:
-        print(f"⚠️ API-Verbindungsfehler: {e}")
-    return None
-
-def get_route_color(transporte):
-    if transporte <= 10:
-        return "green"
-    elif transporte <= 50:
-        return "yellow"
-    elif transporte <= 100:
-        return "orange"
-    return "red"
 
 def add_legend(m):
     legend_html = '''
@@ -118,7 +89,7 @@ def update_map(selected_routes):
     if not selected_routes or 'all' in selected_routes:
         selected_routes = df['Route'].tolist()
 
-    m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)  # Deutschland als Mittelpunkt
+    m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
     
     for _, row in df.iterrows():
         if row['Route'] in selected_routes:
@@ -131,9 +102,19 @@ def update_map(selected_routes):
             if route_geometry:
                 folium.PolyLine(
                     route_geometry, 
-                    color=get_route_color(transporte), 
+                    color="blue", 
                     weight=5, 
-                    tooltip=f"Transporte: {transporte}"
+                    tooltip=f"{row['Route']} - Transporte: {transporte} pro Woche"
+                ).add_to(m)
+                folium.Marker(
+                    location=start_coords,
+                    popup=f"Startpunkt: <a href='{google_maps_link}' target='_blank'>Google Maps</a>",
+                    icon=folium.Icon(color="blue")
+                ).add_to(m)
+                folium.Marker(
+                    location=end_coords,
+                    popup=f"Zielpunkt: <a href='{google_maps_link}' target='_blank'>Google Maps</a>",
+                    icon=folium.Icon(color="red")
                 ).add_to(m)
     
     add_legend(m)
