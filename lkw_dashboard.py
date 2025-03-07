@@ -8,9 +8,18 @@ import json
 import polyline
 import os
 import re
+from flask import Flask
 
 # OpenRouteService API-Key
 ORS_API_KEY = "5b3ce3597851110001cf6248f42ededae9b5414fb25591adaff63db4"
+
+# Flask-Server erstellen, um HEAD-Requests zu unterstützen
+server = Flask(__name__)
+app = dash.Dash(__name__, server=server, suppress_callback_exceptions=True)
+
+@server.route("/", methods=["HEAD"])
+def head_request():
+    return "", 200
 
 # CSV-Datei einlesen
 file_path = "Datenblatt Routenanalyse .csv"
@@ -28,8 +37,8 @@ def clean_coordinates(coord_string):
             coord_string = coord_string.replace(";", ",")
             parts = coord_string.split(",")
             if len(parts) == 2:
-                lon, lat = map(float, parts)  # Längengrad, dann Breitengrad für API
-                return [lon, lat]  # OpenRouteService benötigt diese Reihenfolge
+                lon, lat = map(float, parts)
+                return [lon, lat]
     except Exception as e:
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
     return None
@@ -38,7 +47,11 @@ df["Koordinaten Start"] = df["Koordinaten Start"].apply(clean_coordinates)
 df["Koordinaten Ziel"] = df["Koordinaten Ziel"].apply(clean_coordinates)
 df.dropna(subset=["Koordinaten Start", "Koordinaten Ziel"], inplace=True)
 
-# Caching für Routenberechnung
+# Dropdown-Optionen vorbereiten
+route_options = [{'label': route, 'value': route} for route in df['Routen Google Maps'].unique()]
+route_options.insert(0, {'label': 'Alle Routen', 'value': 'all'})
+
+# Caching für Routen
 route_cache_file = "routes_cache.json"
 if os.path.exists(route_cache_file):
     with open(route_cache_file, "r", encoding="utf-8") as f:
@@ -106,46 +119,27 @@ def add_legend(m):
     '''
     m.get_root().html.add_child(folium.Element(legend_html))
 
-app = dash.Dash(__name__)
+app.layout = html.Div([
+    html.H1("LKW Routen-Dashboard"),
+    dcc.Dropdown(id='route-selector', options=route_options, multi=True, value=['all'], placeholder="Wähle eine Route"),
+    html.Iframe(id="map", width="100%", height="600")
+])
 
-@app.callback(
-    Output('map', 'srcDoc'),
-    [Input('route-selector', 'value')]
-)
+@app.callback(Output('map', 'srcDoc'), [Input('route-selector', 'value')])
 def update_map(selected_routes):
     if not selected_routes or 'all' in selected_routes:
-        selected_routes = df['Route'].tolist()
-
+        selected_routes = df['Routen Google Maps'].tolist()
+    
     m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
+    add_legend(m)
     
     for _, row in df.iterrows():
-        if row['Route'] in selected_routes:
-            start_coords = row["Koordinaten Start"]
-            end_coords = row["Koordinaten Ziel"]
-            transporte = row["Transporte pro Woche"]
-            route_geometry = get_lkw_route(start_coords, end_coords, row['Route'])
+        if row["Routen Google Maps"] in selected_routes:
+            route_geometry = get_lkw_route(row["Koordinaten Start"], row["Koordinaten Ziel"], row["Routen Google Maps"])
             if route_geometry:
-                folium.PolyLine(
-                    route_geometry, 
-                    color=get_route_color(transporte), 
-                    weight=5, 
-                    tooltip=f"{row['Route']} - Transporte: {transporte} pro Woche"
-                ).add_to(m)
-            folium.Marker(
-                location=start_coords,
-                popup=f"Startpunkt", icon=folium.Icon(color="blue")
-            ).add_to(m)
-            folium.Marker(
-                location=end_coords,
-                popup=f"Zielpunkt", icon=folium.Icon(color="red")
-            ).add_to(m)
+                folium.PolyLine(route_geometry, color=get_route_color(row["Transporte pro Woche"]), weight=5).add_to(m)
     
-    add_legend(m)
-    map_path = "map.html"
-    m.save(map_path)
-    return open(map_path, "r", encoding="utf-8").read()
+    return m._repr_html_()
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
-
-server = app.server
+    app.run_server(debug=False)
