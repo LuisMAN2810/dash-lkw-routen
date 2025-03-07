@@ -8,6 +8,7 @@ import json
 import polyline
 import os
 import re
+import time
 from flask import Flask
 
 # OpenRouteService API-Key
@@ -53,38 +54,27 @@ route_options.insert(0, {'label': 'Alle Routen', 'value': 'all'})
 
 # Caching für Routen
 route_cache_file = "routes_cache.json"
-if os.path.exists(route_cache_file):
+if not os.path.exists(route_cache_file):
+    with open(route_cache_file, "w", encoding="utf-8") as f:
+        json.dump({}, f, indent=4)
+
+try:
     with open(route_cache_file, "r", encoding="utf-8") as f:
         route_cache = json.load(f)
-else:
+except (json.JSONDecodeError, FileNotFoundError):
     route_cache = {}
 
+MAX_CACHE_SIZE = 1000  # Begrenzung der gespeicherten Routen
+
 def save_routes():
+    if len(route_cache) > MAX_CACHE_SIZE:
+        keys_to_remove = list(route_cache.keys())[:len(route_cache) - MAX_CACHE_SIZE]
+        for key in keys_to_remove:
+            del route_cache[key]
     with open(route_cache_file, "w", encoding="utf-8") as f:
         json.dump(route_cache, f, indent=4)
 
-def get_lkw_route(start_coords, end_coords, route_name):
-    if route_name in route_cache:
-        return route_cache[route_name]
-    
-    url = "https://api.openrouteservice.org/v2/directions/driving-hgv"
-    headers = {"Authorization": ORS_API_KEY, "Content-Type": "application/json"}
-    data = {"coordinates": [start_coords, end_coords], "format": "json"}
-    
-    try:
-        response = requests.post(url, headers=headers, json=data)
-        if response.status_code == 200:
-            data = response.json()
-            route_geometry = polyline.decode(data["routes"][0]["geometry"])
-            route_cache[route_name] = route_geometry
-            save_routes()
-            return route_geometry
-        else:
-            print(f"⚠️ API-Fehler für {route_name}: {response.text}")
-    except Exception as e:
-        print(f"⚠️ API-Verbindungsfehler für {route_name}: {e}")
-    return None
-
+# Dash App Layout
 def get_route_color(transporte):
     if transporte <= 10:
         return "green"
