@@ -54,14 +54,15 @@ route_options.insert(0, {'label': 'Alle Routen', 'value': 'all'})
 
 # Caching für Routen
 route_cache_file = "routes_cache.json"
-if not os.path.exists(route_cache_file):
+if not os.path.exists(route_cache_file) or os.stat(route_cache_file).st_size == 0:
     with open(route_cache_file, "w", encoding="utf-8") as f:
         json.dump({}, f, indent=4)
 
 try:
     with open(route_cache_file, "r", encoding="utf-8") as f:
         route_cache = json.load(f)
-except (json.JSONDecodeError, FileNotFoundError):
+except (json.JSONDecodeError, FileNotFoundError) as err:
+    print(f"⚠️ Fehler beim Laden der Caching-Datei: {err}")
     route_cache = {}
 
 MAX_CACHE_SIZE = 1000  # Begrenzung der gespeicherten Routen
@@ -87,18 +88,22 @@ def get_lkw_route(start_coords, end_coords, route_name):
     
     try:
         response = requests.post(url, headers=headers, json=data, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            route_geometry = polyline.decode(data["routes"][0]["geometry"])
-            route_cache[route_name] = route_geometry
-            save_routes()
-            return route_geometry
-        else:
-            print(f"⚠️ API-Fehler für {route_name}: {response.text}")
-    except requests.exceptions.Timeout:
-        print(f"⚠️ API-Timeout für {route_name}")
-    except Exception as e:
-        print(f"⚠️ API-Verbindungsfehler für {route_name}: {e}")
+        response.raise_for_status()
+        data = response.json()
+        
+        if "routes" not in data or not data["routes"]:
+            print(f"⚠️ Keine Route für {route_name} gefunden.")
+            return None
+
+        route_geometry = polyline.decode(data["routes"][0]["geometry"])
+        route_cache[route_name] = route_geometry
+        save_routes()
+        return route_geometry
+    
+    except requests.exceptions.RequestException as err:
+        print(f"⚠️ API-Fehler für {route_name}: {err}")
+    except KeyError:
+        print(f"⚠️ Unerwartete API-Antwort: {data}")
     return None
 
 app.layout = html.Div([
