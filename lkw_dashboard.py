@@ -27,7 +27,7 @@ file_path = "Datenblatt Routenanalyse .csv"
 df = pd.read_csv(file_path, delimiter=";", encoding="utf-8-sig")
 
 df["Transporte pro Woche"] = pd.to_numeric(df["Transporte pro Woche"], errors='coerce')
-df = df.dropna(subset=["Transporte pro Woche", "Koordinaten Start", "Koordinaten Ziel", "Routen Google Maps"])
+df = df.dropna(subset=["Transporte pro Woche", "Koordinaten Start", "Koordinaten Ziel", "Route"])
 
 def clean_coordinates(coord_string):
     try:
@@ -48,8 +48,8 @@ df["Koordinaten Start"] = df["Koordinaten Start"].apply(clean_coordinates)
 df["Koordinaten Ziel"] = df["Koordinaten Ziel"].apply(clean_coordinates)
 df.dropna(subset=["Koordinaten Start", "Koordinaten Ziel"], inplace=True)
 
-# Dropdown-Optionen vorbereiten
-route_options = [{'label': route, 'value': route} for route in df['Routen Google Maps'].unique()]
+# Dropdown-Optionen mit Spalte "Route"
+route_options = [{'label': route, 'value': route} for route in df['Route'].unique()]
 route_options.insert(0, {'label': 'Alle Routen', 'value': 'all'})
 
 # Caching für Routen
@@ -74,40 +74,32 @@ def save_routes():
     with open(route_cache_file, "w", encoding="utf-8") as f:
         json.dump(route_cache, f, indent=4)
 
-# Dash App Layout
-def get_route_color(transporte):
-    if transporte <= 10:
-        return "green"
-    elif transporte <= 50:
-        return "yellow"
-    elif transporte <= 100:
-        return "orange"
-    return "red"
-
-def add_legend(m):
-    legend_html = '''
-     <div style="position: fixed; bottom: 50px; left: 50px; width: 220px; padding: 15px; background-color: white; 
-     box-shadow: 2px 2px 10px rgba(0,0,0,0.3); z-index:9999; border-radius:10px; font-family:Arial;">
-     <h4 style="margin: 0 0 10px 0; text-align:center;">Transporte pro Woche</h4>
-     <div style="display: flex; align-items: center; margin-bottom: 5px;">
-       <div style="width: 30px; height: 5px; background-color: green; margin-right: 10px;"></div>
-       <span>1-10 Transporte</span>
-     </div>
-     <div style="display: flex; align-items: center; margin-bottom: 5px;">
-       <div style="width: 30px; height: 5px; background-color: yellow; margin-right: 10px;"></div>
-       <span>11-50 Transporte</span>
-     </div>
-     <div style="display: flex; align-items: center; margin-bottom: 5px;">
-       <div style="width: 30px; height: 5px; background-color: orange; margin-right: 10px;"></div>
-       <span>51-100 Transporte</span>
-     </div>
-     <div style="display: flex; align-items: center;">
-       <div style="width: 30px; height: 5px; background-color: red; margin-right: 10px;"></div>
-       <span>>100 Transporte</span>
-     </div>
-     </div>
-    '''
-    m.get_root().html.add_child(folium.Element(legend_html))
+def get_lkw_route(start_coords, end_coords, route_name):
+    if not start_coords or not end_coords:
+        return None
+    
+    if route_name in route_cache:
+        return route_cache[route_name]
+    
+    url = "https://api.openrouteservice.org/v2/directions/driving-hgv"
+    headers = {"Authorization": ORS_API_KEY, "Content-Type": "application/json"}
+    data = {"coordinates": [start_coords, end_coords], "format": "json"}
+    
+    try:
+        response = requests.post(url, headers=headers, json=data, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            route_geometry = polyline.decode(data["routes"][0]["geometry"])
+            route_cache[route_name] = route_geometry
+            save_routes()
+            return route_geometry
+        else:
+            print(f"⚠️ API-Fehler für {route_name}: {response.text}")
+    except requests.exceptions.Timeout:
+        print(f"⚠️ API-Timeout für {route_name}")
+    except Exception as e:
+        print(f"⚠️ API-Verbindungsfehler für {route_name}: {e}")
+    return None
 
 app.layout = html.Div([
     html.H1("LKW Routen-Dashboard"),
@@ -118,17 +110,17 @@ app.layout = html.Div([
 @app.callback(Output('map', 'srcDoc'), [Input('route-selector', 'value')])
 def update_map(selected_routes):
     if not selected_routes or 'all' in selected_routes:
-        selected_routes = df['Routen Google Maps'].dropna().tolist()
+        selected_routes = df['Route'].dropna().tolist()
     
     m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
     add_legend(m)
     
     for _, row in df.iterrows():
-        if row["Routen Google Maps"] not in selected_routes:
+        if row["Route"] not in selected_routes:
             continue
         if row["Koordinaten Start"] is None or row["Koordinaten Ziel"] is None:
             continue
-        route_geometry = get_lkw_route(row["Koordinaten Start"], row["Koordinaten Ziel"], row["Routen Google Maps"])
+        route_geometry = get_lkw_route(row["Koordinaten Start"], row["Koordinaten Ziel"], row["Route"])
         if not route_geometry:
             continue
         folium.PolyLine(route_geometry, color=get_route_color(row["Transporte pro Woche"]), weight=5).add_to(m)
