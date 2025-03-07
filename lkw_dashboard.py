@@ -118,16 +118,20 @@ app.layout = html.Div([
 @app.callback(Output('map', 'srcDoc'), [Input('route-selector', 'value')])
 def update_map(selected_routes):
     if not selected_routes or 'all' in selected_routes:
-        selected_routes = df['Routen Google Maps'].tolist()
+        selected_routes = df['Routen Google Maps'].dropna().tolist()
     
     m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
     add_legend(m)
     
     for _, row in df.iterrows():
-        if row["Routen Google Maps"] in selected_routes:
-            route_geometry = get_lkw_route(row["Koordinaten Start"], row["Koordinaten Ziel"], row["Routen Google Maps"])
-            if route_geometry:
-                folium.PolyLine(route_geometry, color=get_route_color(row["Transporte pro Woche"]), weight=5).add_to(m)
+        if row["Routen Google Maps"] not in selected_routes:
+            continue
+        if row["Koordinaten Start"] is None or row["Koordinaten Ziel"] is None:
+            continue
+        route_geometry = get_lkw_route(row["Koordinaten Start"], row["Koordinaten Ziel"], row["Routen Google Maps"])
+        if not route_geometry:
+            continue
+        folium.PolyLine(route_geometry, color=get_route_color(row["Transporte pro Woche"]), weight=5).add_to(m)
     
     return m._repr_html_()
 
