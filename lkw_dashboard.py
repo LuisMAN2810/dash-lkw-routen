@@ -139,6 +139,9 @@ def update_map(selected_routes):
         selected_routes = df['Route'].tolist()
 
     m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
+    segment_counts = defaultdict(int)
+
+    route_segments = []
 
     for _, row in df.iterrows():
         if row['Route'] in selected_routes:
@@ -149,12 +152,11 @@ def update_map(selected_routes):
 
             route_geometry = get_lkw_route(start_coords, end_coords, row['Route'])
             if route_geometry:
-                folium.PolyLine(
-                    route_geometry, 
-                    color=get_route_color(transporte), 
-                    weight=5, 
-                    tooltip=folium.Tooltip(f"Transporte: {transporte}")
-                ).add_to(m)
+                # Zähle alle Teilsegmente (Punkt-Paar) entlang der Route
+                for i in range(len(route_geometry) - 1):
+                    segment = tuple(sorted([route_geometry[i], route_geometry[i + 1]]))
+                    segment_counts[segment] += transporte
+                    route_segments.append(segment)
 
                 folium.Marker(
                     location=[start_coords[1], start_coords[0]],
@@ -168,7 +170,15 @@ def update_map(selected_routes):
                     icon=folium.Icon(color="red")
                 ).add_to(m)
 
-    # Verbesserte Legende hinzufügen
+    # Zeichne aggregierte Segmente
+    for segment, count in segment_counts.items():
+        folium.PolyLine(
+            segment,
+            color=get_route_color(count),
+            weight=5,
+            tooltip=folium.Tooltip(f"Aggregierte Transporte: {count}")
+        ).add_to(m)
+
     add_legend(m)
 
     try:
