@@ -7,6 +7,7 @@ import requests
 import json
 import polyline
 from collections import defaultdict
+import os
 
 # OpenRouteService API-Key
 ORS_API_KEY = "5b3ce3597851110001cf6248f42ededae9b5414fb25591adaff63db4"
@@ -24,15 +25,26 @@ def clean_coordinates(coord_string):
         if isinstance(coord_string, str):
             coord_string = coord_string.strip()
             lon, lat = map(float, coord_string.split(","))
-            return [lon, lat]  # OpenRouteService erwartet [lon, lat]
+            return [lon, lat]  # OpenRouteService erwartet [longitude, latitude]
     except Exception as e:
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
     return None
 
-
 df["Koordinaten Start"] = df["Koordinaten Start"].apply(clean_coordinates)
 df["Koordinaten Ziel"] = df["Koordinaten Ziel"].apply(clean_coordinates)
 df.dropna(subset=["Koordinaten Start", "Koordinaten Ziel"], inplace=True)
+
+# Routen-Caching
+route_cache_file = "routes_cache.json"
+if os.path.exists(route_cache_file):
+    with open(route_cache_file, "r", encoding="utf-8") as f:
+        route_cache = json.load(f)
+else:
+    route_cache = {}
+
+def save_routes():
+    with open(route_cache_file, "w", encoding="utf-8") as f:
+        json.dump(route_cache, f, indent=4)
 
 # Dash-App initialisieren
 app = dash.Dash(__name__)
@@ -135,7 +147,7 @@ def update_map(selected_routes):
             transporte = row["Transporte pro Woche"]
             google_maps_link = row["Routen Google Maps"]
 
-            route_geometry = get_lkw_route(start_coords, end_coords)
+            route_geometry = get_lkw_route(start_coords, end_coords, row['Route'])
             if route_geometry:
                 folium.PolyLine(
                     route_geometry, 
