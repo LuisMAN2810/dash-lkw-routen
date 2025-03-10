@@ -19,16 +19,16 @@ df = pd.read_csv(file_path, delimiter=";", encoding="utf-8")
 df["Transporte pro Woche"] = pd.to_numeric(df["Transporte pro Woche"], errors='coerce')
 df = df.dropna(subset=["Transporte pro Woche", "Koordinaten Start", "Koordinaten Ziel", "Routen Google Maps"])
 
-# Funktion zur Bereinigung der Koordinaten
 def clean_coordinates(coord_string):
     try:
         if isinstance(coord_string, str):
-            coord_string = coord_string.replace("\t", "").replace(",", ".").strip()
-            lon, lat = map(float, coord_string.split(";"))
-            return [lon, lat]
+            coord_string = coord_string.strip()
+            lon, lat = map(float, coord_string.split(","))
+            return [lon, lat]  # OpenRouteService erwartet [lon, lat]
     except Exception as e:
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
     return None
+
 
 df["Koordinaten Start"] = df["Koordinaten Start"].apply(clean_coordinates)
 df["Koordinaten Ziel"] = df["Koordinaten Ziel"].apply(clean_coordinates)
