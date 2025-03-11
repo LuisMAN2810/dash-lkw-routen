@@ -35,7 +35,7 @@ df["Koordinaten Start"] = df["Koordinaten Start"].apply(clean_coordinates)
 df["Koordinaten Ziel"] = df["Koordinaten Ziel"].apply(clean_coordinates)
 df.dropna(subset=["Koordinaten Start", "Koordinaten Ziel"], inplace=True)
 
-# Leeren Cache initialisieren
+# Routen-Cache laden (nur Lesen für Render)
 route_cache_file = "routes_cache.json"
 if os.path.exists(route_cache_file):
     with open(route_cache_file, "r", encoding="utf-8") as f:
@@ -65,29 +65,11 @@ app.layout = html.Div([
     html.Iframe(id="map", width="100%", height="600")
 ])
 
-# API-Abfrage für OpenRouteService LKW-Routing (Cache neu aufbauen)
+# API-Abfrage für OpenRouteService LKW-Routing (nur aus Cache)
 def get_lkw_route(start_coords, end_coords, route_name):
     if route_name in route_cache:
         return route_cache[route_name]
-
-    url = "https://api.openrouteservice.org/v2/directions/driving-hgv"
-    headers = {
-        "Authorization": ORS_API_KEY,
-        "Content-Type": "application/json"
-    }
-    data = {
-        "coordinates": [start_coords, end_coords],
-        "format": "json",
-        "instructions": False
-    }
-
-    try:
-        print(f"❌ Route '{route_name}' nicht im Cache.")
-        return None
-        else:
-            print(f"⚠️ API-Fehler für {route_name}: {response.text}")
-    except Exception as e:
-        print(f"⚠️ API-Verbindungsfehler für {route_name}: {e}")
+    print(f"❌ Route '{route_name}' nicht im Cache.")
     return None
 
 # Farben nach Transportmenge
@@ -183,7 +165,7 @@ def update_map(selected_routes):
         print(f"❌ Fehler beim Erzeugen der Karte: {e}")
         return "<h3>Fehler beim Laden der Karte</h3>"
 
+server = app.server
+
 if __name__ == '__main__':
     app.run_server(debug=True)
-
-server = app.server
