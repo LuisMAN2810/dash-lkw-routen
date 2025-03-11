@@ -8,6 +8,7 @@ import json
 import polyline
 from collections import defaultdict
 import os
+import io
 
 # OpenRouteService API-Key
 ORS_API_KEY = "5b3ce3597851110001cf6248f42ededae9b5414fb25591adaff63db4"
@@ -34,17 +35,17 @@ df["Koordinaten Start"] = df["Koordinaten Start"].apply(clean_coordinates)
 df["Koordinaten Ziel"] = df["Koordinaten Ziel"].apply(clean_coordinates)
 df.dropna(subset=["Koordinaten Start", "Koordinaten Ziel"], inplace=True)
 
-# Routen-Caching
+# Read-only Caching für Render
 route_cache_file = "routes_cache.json"
 if os.path.exists(route_cache_file):
     with open(route_cache_file, "r", encoding="utf-8") as f:
         route_cache = json.load(f)
 else:
+    print("❌ Achtung: Routen-Cache fehlt!")
     route_cache = {}
 
 def save_routes():
-    with open(route_cache_file, "w", encoding="utf-8") as f:
-        json.dump(route_cache, f, indent=4)
+    pass  # Auf Render keine Datei schreiben
 
 # Dash-App initialisieren
 app = dash.Dash(__name__)
@@ -64,35 +65,13 @@ app.layout = html.Div([
     html.Iframe(id="map", width="100%", height="600")
 ])
 
-# API-Abfrage für OpenRouteService LKW-Routing
+# API-Abfrage für OpenRouteService LKW-Routing (read-only aus Cache)
 def get_lkw_route(start_coords, end_coords, route_name):
     if route_name in route_cache:
         return route_cache[route_name]
-
-    url = "https://api.openrouteservice.org/v2/directions/driving-hgv"
-    headers = {
-        "Authorization": ORS_API_KEY,
-        "Content-Type": "application/json"
-    }
-    data = {
-        "coordinates": [start_coords, end_coords],
-        "format": "json",
-        "instructions": False
-    }
-
-    try:
-        response = requests.post(url, headers=headers, json=data)
-        if response.status_code == 200:
-            data = response.json()
-            route_geometry = polyline.decode(data["routes"][0]["geometry"])
-            route_cache[route_name] = route_geometry
-            save_routes()
-            return route_geometry
-        else:
-            print(f"⚠️ API-Fehler für {route_name}: {response.text}")
-    except Exception as e:
-        print(f"⚠️ API-Verbindungsfehler für {route_name}: {e}")
-    return None
+    else:
+        print(f"❌ Kein Cache für {route_name} vorhanden.")
+        return None
 
 # Farben nach Transportmenge
 def get_route_color(transporte):
@@ -141,8 +120,6 @@ def update_map(selected_routes):
     m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
     segment_counts = defaultdict(int)
 
-    route_segments = []
-
     for _, row in df.iterrows():
         if row['Route'] in selected_routes:
             start_coords = row["Koordinaten Start"]
@@ -151,24 +128,25 @@ def update_map(selected_routes):
             google_maps_link = row["Routen Google Maps"]
 
             route_geometry = get_lkw_route(start_coords, end_coords, row['Route'])
-            if route_geometry:
-                # Zähle alle Teilsegmente (Punkt-Paar) entlang der Route
-                for i in range(len(route_geometry) - 1):
-                    segment = tuple(sorted([route_geometry[i], route_geometry[i + 1]]))
-                    segment_counts[segment] += transporte
-                    route_segments.append(segment)
+            if not route_geometry:
+                continue  # Überspringe, wenn Route fehlt
 
-                folium.Marker(
-                    location=[start_coords[1], start_coords[0]],
-                    popup=folium.Popup(f"<b>Start</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
-                    icon=folium.Icon(color="blue")
-                ).add_to(m)
+            # Zähle alle Teilsegmente (Punkt-Paar) entlang der Route
+            for i in range(len(route_geometry) - 1):
+                segment = tuple(sorted([route_geometry[i], route_geometry[i + 1]]))
+                segment_counts[segment] += transporte
 
-                folium.Marker(
-                    location=[end_coords[1], end_coords[0]],
-                    popup=folium.Popup(f"<b>Ziel</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
-                    icon=folium.Icon(color="red")
-                ).add_to(m)
+            folium.Marker(
+                location=[start_coords[1], start_coords[0]],
+                popup=folium.Popup(f"<b>Start</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
+                icon=folium.Icon(color="blue")
+            ).add_to(m)
+
+            folium.Marker(
+                location=[end_coords[1], end_coords[0]],
+                popup=folium.Popup(f"<b>Ziel</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
+                icon=folium.Icon(color="red")
+            ).add_to(m)
 
     # Zeichne aggregierte Segmente
     for segment, count in segment_counts.items():
@@ -182,12 +160,12 @@ def update_map(selected_routes):
     add_legend(m)
 
     try:
-        map_path = "map.html"
-        m.save(map_path)
-        return open(map_path, "r", encoding="utf-8").read()
+        html_buffer = io.StringIO()
+        m.save(html_buffer)
+        return html_buffer.getvalue()
     except Exception as e:
-        print(f"❌ Fehler beim Speichern der Karte: {e}")
-        return ""
+        print(f"❌ Fehler beim Erzeugen der Karte: {e}")
+        return "<h3>Fehler beim Laden der Karte</h3>"
 
 if __name__ == '__main__':
     app.run_server(debug=True)
