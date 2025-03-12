@@ -54,7 +54,14 @@ route_options = [{'label': 'Alle anzeigen', 'value': 'all'}] + [
     {'label': row['Route'], 'value': row['Route']} for _, row in df.iterrows()
 ]
 
+app.title = "LKW Routen-Dashboard"
+
 app.layout = html.Div([
+    dcc.Loading(
+        id="loading-map",
+        type="circle",
+        fullscreen=False,
+        children=[
     html.H1("LKW Routen-Dashboard"),
     dcc.Dropdown(
         id='route-selector',
@@ -63,6 +70,8 @@ app.layout = html.Div([
         placeholder="Wähle eine Route"
     ),
     html.Iframe(id="map", width="100%", height="600")
+        ]
+    )
 ])
 
 # API-Abfrage für OpenRouteService LKW-Routing (nur aus Cache)
@@ -116,6 +125,17 @@ def update_map(selected_routes):
     print("📌 Starte Map-Erstellung")
     print("📌 Anzahl Routen im Cache:", len(route_cache))
     print("📌 Auswahl:", selected_routes)
+
+    if selected_routes is None:
+        # Initial-Ansicht: nur leere Karte anzeigen
+        m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
+        try:
+            html_buffer = io.BytesIO()
+            m.save(html_buffer, close_file=False)
+            return html_buffer.getvalue().decode()
+        except Exception as e:
+            print(f"❌ Fehler beim Erzeugen der Karte: {e}")
+            return "<h3>Fehler beim Laden der Karte</h3>"
 
     if not selected_routes or 'all' in selected_routes:
         selected_routes = df['Route'].tolist()
