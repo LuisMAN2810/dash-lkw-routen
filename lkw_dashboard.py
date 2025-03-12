@@ -141,7 +141,9 @@ def update_map(selected_routes):
             route_count += 1
 
             for i in range(len(route_geometry) - 1):
-                segment = tuple(sorted([route_geometry[i], route_geometry[i + 1]]))
+                point1 = tuple(route_geometry[i])
+                point2 = tuple(route_geometry[i + 1])
+                segment = tuple(sorted([point1, point2]))
                 segment_counts[segment] += transporte
 
             folium.Marker(
