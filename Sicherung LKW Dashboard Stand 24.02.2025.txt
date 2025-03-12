@@ -7,9 +7,10 @@ import requests
 import json
 import polyline
 from collections import defaultdict
+import os
 
-# GraphHopper API-Key
-GRAPHHOPPER_API_KEY = "045abf50-4e22-453a-b0a9-8374930f4e47"
+# OpenRouteService API-Key
+ORS_API_KEY = "5b3ce3597851110001cf6248f42ededae9b5414fb25591adaff63db4"
 
 # CSV-Datei einlesen
 file_path = "Datenblatt Routenanalyse .csv"
@@ -19,13 +20,12 @@ df = pd.read_csv(file_path, delimiter=";", encoding="utf-8")
 df["Transporte pro Woche"] = pd.to_numeric(df["Transporte pro Woche"], errors='coerce')
 df = df.dropna(subset=["Transporte pro Woche", "Koordinaten Start", "Koordinaten Ziel", "Routen Google Maps"])
 
-# Funktion zur Bereinigung der Koordinaten
 def clean_coordinates(coord_string):
     try:
         if isinstance(coord_string, str):
-            coord_string = coord_string.replace("\t", "").replace(",", ".").strip()
-            lat, lon = map(float, coord_string.split(";"))
-            return [lon, lat]
+            coord_string = coord_string.strip()
+            lon, lat = map(float, coord_string.split(","))
+            return [lon, lat]  # OpenRouteService erwartet [longitude, latitude]
     except Exception as e:
         print(f"⚠️ Fehler bei der Umwandlung der Koordinaten '{coord_string}': {e}")
     return None
@@ -33,6 +33,18 @@ def clean_coordinates(coord_string):
 df["Koordinaten Start"] = df["Koordinaten Start"].apply(clean_coordinates)
 df["Koordinaten Ziel"] = df["Koordinaten Ziel"].apply(clean_coordinates)
 df.dropna(subset=["Koordinaten Start", "Koordinaten Ziel"], inplace=True)
+
+# Routen-Caching
+route_cache_file = "routes_cache.json"
+if os.path.exists(route_cache_file):
+    with open(route_cache_file, "r", encoding="utf-8") as f:
+        route_cache = json.load(f)
+else:
+    route_cache = {}
+
+def save_routes():
+    with open(route_cache_file, "w", encoding="utf-8") as f:
+        json.dump(route_cache, f, indent=4)
 
 # Dash-App initialisieren
 app = dash.Dash(__name__)
@@ -52,27 +64,34 @@ app.layout = html.Div([
     html.Iframe(id="map", width="100%", height="600")
 ])
 
-# API-Abfrage
-def get_lkw_route(start_coords, end_coords):
-    url = "https://graphhopper.com/api/1/route"
-    params = {
-        "key": GRAPHHOPPER_API_KEY,
-        "point": [f"{start_coords[1]},{start_coords[0]}", f"{end_coords[1]},{end_coords[0]}"],
-        "profile": "truck",
-        "locale": "de",
-        "calc_points": True,
-        "instructions": False,
-        "geometry": True
+# API-Abfrage für OpenRouteService LKW-Routing
+def get_lkw_route(start_coords, end_coords, route_name):
+    if route_name in route_cache:
+        return route_cache[route_name]
+
+    url = "https://api.openrouteservice.org/v2/directions/driving-hgv"
+    headers = {
+        "Authorization": ORS_API_KEY,
+        "Content-Type": "application/json"
     }
+    data = {
+        "coordinates": [start_coords, end_coords],
+        "format": "json",
+        "instructions": False
+    }
+
     try:
-        response = requests.get(url, params=params)
+        response = requests.post(url, headers=headers, json=data)
         if response.status_code == 200:
             data = response.json()
-            return polyline.decode(data["paths"][0]["points"])
+            route_geometry = polyline.decode(data["routes"][0]["geometry"])
+            route_cache[route_name] = route_geometry
+            save_routes()
+            return route_geometry
         else:
-            print(f"⚠️ API-Fehler: {response.text}")
+            print(f"⚠️ API-Fehler für {route_name}: {response.text}")
     except Exception as e:
-        print(f"⚠️ API-Verbindungsfehler: {e}")
+        print(f"⚠️ API-Verbindungsfehler für {route_name}: {e}")
     return None
 
 # Farben nach Transportmenge
@@ -128,7 +147,7 @@ def update_map(selected_routes):
             transporte = row["Transporte pro Woche"]
             google_maps_link = row["Routen Google Maps"]
 
-            route_geometry = get_lkw_route(start_coords, end_coords)
+            route_geometry = get_lkw_route(start_coords, end_coords, row['Route'])
             if route_geometry:
                 folium.PolyLine(
                     route_geometry, 

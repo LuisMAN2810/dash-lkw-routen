@@ -137,7 +137,16 @@ def update_map(selected_routes):
             print(f"❌ Fehler beim Erzeugen der Karte: {e}")
             return "<h3>Fehler beim Laden der Karte</h3>"
 
-    if not selected_routes or 'all' in selected_routes:
+    if selected_routes == ['all']:
+        try:
+            with open("map_all.html", "r", encoding="utf-8") as f:
+                print("📄 Lade statische Karte aus map_all.html")
+                return f.read()
+        except Exception as e:
+            print(f"❌ Fehler beim Laden von map_all.html: {e}")
+            return "<h3>Statische Karte nicht gefunden</h3>"
+
+    if not selected_routes:
         selected_routes = df['Route'].tolist()
 
     m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
@@ -202,5 +211,52 @@ def update_map(selected_routes):
 
 server = app.server
 
+def generate_static_map_for_all():
+    print("🛠️ Erzeuge statische Gesamtkarte…")
+    m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
+    segment_counts = defaultdict(int)
+
+    for _, row in df.iterrows():
+        start_coords = row["Koordinaten Start"]
+        end_coords = row["Koordinaten Ziel"]
+        transporte = row["Transporte pro Woche"]
+        google_maps_link = row["Routen Google Maps"]
+        route_name = row['Route']
+
+        route_geometry = get_lkw_route(start_coords, end_coords, route_name)
+        if not route_geometry:
+            continue
+
+        for i in range(len(route_geometry) - 1):
+            point1 = tuple(route_geometry[i])
+            point2 = tuple(route_geometry[i + 1])
+            segment = tuple(sorted([point1, point2]))
+            segment_counts[segment] += transporte
+
+        folium.Marker(
+            location=[start_coords[1], start_coords[0]],
+            popup=folium.Popup(f"<b>Start</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
+            icon=folium.Icon(color="blue")
+        ).add_to(m)
+
+        folium.Marker(
+            location=[end_coords[1], end_coords[0]],
+            popup=folium.Popup(f"<b>Ziel</b><br><a href='{google_maps_link}' target='_blank'>Google Maps</a>", max_width=300),
+            icon=folium.Icon(color="red")
+        ).add_to(m)
+
+    for segment, count in segment_counts.items():
+        folium.PolyLine(
+            segment,
+            color=get_route_color(count),
+            weight=5,
+            tooltip=folium.Tooltip(f"Aggregierte Transporte: {count}")
+        ).add_to(m)
+
+    add_legend(m)
+    m.save("map_all.html")
+    print("✅ map_all.html gespeichert!")
+
 if __name__ == '__main__':
+    generate_static_map_for_all()
     app.run_server(debug=True)
