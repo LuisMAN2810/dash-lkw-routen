@@ -138,13 +138,18 @@ def update_map(selected_routes):
             return "<h3>Fehler beim Laden der Karte</h3>"
 
     if selected_routes == ['all']:
+        print("🌐 Lade statische Karte von GitHub")
         try:
-            with open("map_all.html", "r", encoding="utf-8") as f:
-                print("📄 Lade statische Karte aus map_all.html")
-                return f.read()
+            url = "https://raw.githubusercontent.com/LuisMAN2810/dash-lkw-routen/main/map_all.html"
+            response = requests.get(url)
+            if response.status_code == 200:
+                return response.text
+            else:
+                print(f"❌ Fehler beim Laden von GitHub: Status {response.status_code}")
+                return "<h3>Karte konnte nicht von GitHub geladen werden</h3>"
         except Exception as e:
-            print(f"❌ Fehler beim Laden von map_all.html: {e}")
-            return "<h3>Statische Karte nicht gefunden</h3>"
+            print(f"❌ Fehler bei der Online-Abfrage: {e}")
+            return "<h3>Fehler beim Laden der statischen Karte</h3>"
 
     if not selected_routes:
         selected_routes = df['Route'].tolist()
