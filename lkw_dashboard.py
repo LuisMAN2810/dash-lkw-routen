@@ -113,11 +113,17 @@ def add_legend(m):
     [Input('route-selector', 'value')]
 )
 def update_map(selected_routes):
+    print("📌 Starte Map-Erstellung")
+    print("📌 Anzahl Routen im Cache:", len(route_cache))
+    print("📌 Auswahl:", selected_routes)
+
     if not selected_routes or 'all' in selected_routes:
         selected_routes = df['Route'].tolist()
 
     m = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
     segment_counts = defaultdict(int)
+
+    route_count = 0
 
     for _, row in df.iterrows():
         if row['Route'] in selected_routes:
@@ -129,7 +135,10 @@ def update_map(selected_routes):
             route_name = row['Route']
             route_geometry = get_lkw_route(start_coords, end_coords, route_name)
             if not route_geometry:
+                print(f"⚠️ Keine Geometrie für {route_name}")
                 continue
+
+            route_count += 1
 
             for i in range(len(route_geometry) - 1):
                 segment = tuple(sorted([route_geometry[i], route_geometry[i + 1]]))
@@ -147,6 +156,8 @@ def update_map(selected_routes):
                 icon=folium.Icon(color="red")
             ).add_to(m)
 
+    print(f"✅ Routen verarbeitet: {route_count}")
+
     for segment, count in segment_counts.items():
         folium.PolyLine(
             segment,
@@ -160,7 +171,9 @@ def update_map(selected_routes):
     try:
         html_buffer = io.BytesIO()
         m.save(html_buffer, close_file=False)
-        return html_buffer.getvalue().decode()
+        html_code = html_buffer.getvalue().decode()
+        print("✅ HTML erfolgreich erzeugt. Länge:", len(html_code))
+        return html_code
     except Exception as e:
         print(f"❌ Fehler beim Erzeugen der Karte: {e}")
         return "<h3>Fehler beim Laden der Karte</h3>"
